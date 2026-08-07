@@ -3,481 +3,2093 @@
 <head>  
     <meta charset="UTF-8">  
     <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-    <title>🌌 COSMOS 3D - Solar System Explorer</title>  
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>  
+    <title>Solar System Explorer</title>  
     <style>  
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Exo+2:wght@300;400;600&display=swap');  
-        *{margin:0;padding:0;box-sizing:border-box}  
-        body{background:#000;overflow:hidden;font-family:'Exo 2',sans-serif;color:#fff}  
-        canvas{display:block;cursor:grab}  
-        canvas:active{cursor:grabbing}
-
-        .hud{position:fixed;z-index:100;pointer-events:none}  
-        .top{top:0;left:0;width:100%;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;  
-            background:linear-gradient(180deg,rgba(0,0,0,.92)0%,rgba(0,0,0,.3)70%,transparent)}  
-        .logo{font-family:'Orbitron',sans-serif;font-size:18px;font-weight:900;  
-            background:linear-gradient(135deg,#00d4ff,#7b2ff7,#ff2d95);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:4px}  
-        .logo-s{font-family:'Orbitron',sans-serif;font-size:7px;letter-spacing:5px;  
-            background:linear-gradient(90deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent}  
-        .ctrls{display:flex;gap:6px;pointer-events:auto;flex-wrap:wrap}  
-        .btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#888;padding:5px 12px;  
-            border-radius:16px;font-family:'Orbitron',sans-serif;font-size:8px;cursor:pointer;transition:all .3s;  
-            letter-spacing:1.5px;user-select:none;backdrop-filter:blur(8px)}  
-        .btn:hover,.btn.on{background:rgba(0,212,255,.12);border-color:rgba(0,212,255,.5);color:#00d4ff;  
-            box-shadow:0 0 12px rgba(0,212,255,.2)}
-
-        .bot{bottom:0;left:0;width:100%;display:flex;justify-content:center;padding:0 8px 8px;  
-            background:linear-gradient(0deg,rgba(0,0,0,.95)0%,rgba(0,0,0,.4)60%,transparent)}  
-        .pbar{display:flex;gap:3px;align-items:flex-end;pointer-events:auto;padding:8px 14px 6px;  
-            background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:18px;  
-            backdrop-filter:blur(10px);overflow-x:auto;max-width:100%;scrollbar-width:none}  
-        .pbar::-webkit-scrollbar{display:none}  
-        .pd{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;  
-            padding:5px 8px 3px;border-radius:12px;transition:all .3s cubic-bezier(.34,1.56,.64,1);min-width:52px;flex-shrink:0;position:relative}  
-        .pd:hover{background:rgba(255,255,255,.06);transform:translateY(-3px)}  
-        .pd.sel{background:rgba(0,212,255,.08);transform:translateY(-5px)}  
-        .pd.sel::after{content:'';position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);  
-            width:20px;height:2px;background:var(--c);border-radius:1px;box-shadow:0 0 8px var(--c)}  
-        .pd-orb{width:30px;height:30px;border-radius:50%;box-shadow:0 0 8px var(--c);  
-            transition:transform .3s,box-shadow .3s;overflow:hidden;position:relative;z-index:2}  
-        .pd-orb img{width:100%;height:100%;object-fit:cover;border-radius:50%}  
-        .pd:hover .pd-orb{transform:scale(1.15);box-shadow:0 0 16px var(--c)}  
-        .pd.sel .pd-orb{transform:scale(1.2);box-shadow:0 0 20px var(--c)}  
-        .pd-name{font-family:'Orbitron',sans-serif;font-size:7px;letter-spacing:1px;color:#555;  
-            transition:color .3s;text-align:center;white-space:nowrap}  
-        .pd:hover .pd-name{color:#aaa}  
-        .pd.sel .pd-name{color:#00d4ff}
-
-        .ip{position:fixed;right:-500px;top:50%;transform:translateY(-50%);width:420px;max-height:92vh;z-index:200;  
-            transition:right .5s cubic-bezier(.22,1,.36,1);overflow-y:auto;scrollbar-width:none}  
-        .ip::-webkit-scrollbar{display:none}  
-        .ip.open{right:14px}  
-        .icard{background:rgba(6,6,24,.95);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.06);  
-            border-radius:20px;overflow:hidden;position:relative}  
-        .icard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--ac);z-index:5;border-radius:20px 20px 0 0}  
-        .hero-wrap{position:relative;width:100%;height:220px;overflow:hidden}  
-        .hero-img{width:100%;height:100%;object-fit:cover;display:block;background:#0a0a1a}  
-        .hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,6,24,0)20%,rgba(6,6,24,.98)95%)}  
-        .xb{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;  
-            background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.15);color:#aaa;font-size:15px;  
-            cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .25s;z-index:10;backdrop-filter:blur(8px)}  
-        .xb:hover{background:rgba(255,50,50,.3);border-color:#f44;color:#f44}  
-        .ic-body{padding:0 26px 26px;margin-top:-40px;position:relative;z-index:3}  
-        .ph{display:flex;align-items:center;gap:14px;margin-bottom:18px}  
-        .picon{width:58px;height:58px;border-radius:50%;flex-shrink:0;border:2px solid rgba(255,255,255,.12);  
-            overflow:hidden;box-shadow:0 0 20px var(--ac2,rgba(0,0,0,.5));background:#111}  
-        .picon img{width:100%;height:100%;object-fit:cover}  
-        .pn{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:700;letter-spacing:3px;text-shadow:0 0 20px rgba(0,0,0,.8)}  
-        .pty{font-size:10px;color:#888;letter-spacing:2px;text-transform:uppercase;margin-top:3px}  
-        .sg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}  
-        .si{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:13px;transition:all .25s}  
-        .si:hover{background:rgba(255,255,255,.07);transform:translateY(-2px);border-color:rgba(255,255,255,.1)}  
-        .sl{font-size:8px;color:#555;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}  
-        .sv{font-family:'Orbitron',sans-serif;font-size:13px;color:#00d4ff}  
-        .fb{background:linear-gradient(135deg,rgba(123,47,247,.1),rgba(0,212,255,.1));  
-            border:1px solid rgba(123,47,247,.18);border-radius:12px;padding:14px}  
-        .fti{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:3px;color:#7b2ff7;margin-bottom:6px}  
-        .ftx{font-size:12px;line-height:1.65;color:#ccc}  
-        .mb{margin-top:14px}  
-        .mla{font-size:8px;letter-spacing:3px;color:#555;text-transform:uppercase;margin-bottom:6px}  
-        .mtt{display:flex;flex-wrap:wrap;gap:5px}  
-        .mg{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);padding:3px 9px;border-radius:10px;font-size:9px;color:#aaa}  
-        .pcred{font-size:7px;color:#444;margin-top:12px;letter-spacing:1px}
-
-        .side{position:fixed;z-index:150;display:flex;flex-direction:column;align-items:center;gap:5px}  
-        .lc{left:14px;top:50%;transform:translateY(-50%)}  
-        .rc{right:14px;bottom:90px}  
-        .sb{width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);  
-            color:#777;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;user-select:none}  
-        .sb:hover{background:rgba(0,212,255,.12);border-color:#00d4ff;color:#00d4ff;box-shadow:0 0 10px rgba(0,212,255,.2)}  
-        .sb.hm{background:rgba(123,47,247,.1);border-color:rgba(123,47,247,.3);color:#a78bfa;font-size:8px;font-family:'Orbitron',sans-serif}  
-        .sl2{font-family:'Orbitron',sans-serif;font-size:7px;color:#444;letter-spacing:1.5px}  
-        .sv2{font-family:'Orbitron',sans-serif;font-size:9px;color:#00d4ff}  
-        .focusName{position:fixed;top:62px;left:50%;transform:translateX(-50%);z-index:100;  
-            font-family:'Orbitron',sans-serif;font-size:12px;letter-spacing:5px;color:rgba(255,255,255,.2);  
-            pointer-events:none;transition:opacity .5s;text-shadow:0 0 15px rgba(0,212,255,.2)}  
-        .hint{position:fixed;bottom:82px;left:50%;transform:translateX(-50%);z-index:100;  
-            font-family:'Orbitron',sans-serif;font-size:7px;color:rgba(255,255,255,.1);letter-spacing:2px;pointer-events:none}  
-        .ld{position:fixed;inset:0;background:#000;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 1.5s,visibility 1.5s}  
-        .ld.go{opacity:0;visibility:hidden;pointer-events:none}  
-        .ld-t{font-family:'Orbitron',sans-serif;font-size:38px;font-weight:900;  
-            background:linear-gradient(135deg,#00d4ff,#7b2ff7,#ff2d95);-webkit-background-clip:text;-webkit-text-fill-color:transparent;  
-            margin-bottom:28px;animation:pg 2s ease-in-out infinite}  
-        @keyframes pg{0%,100%{filter:brightness(1)}50%{filter:brightness(1.4)}}  
-        .ld-bg{width:240px;height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}  
-        .ld-f{width:0%;height:100%;background:linear-gradient(90deg,#00d4ff,#7b2ff7,#ff2d95);border-radius:2px;transition:width .3s}  
-        .ld-m{margin-top:14px;font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:3px;color:#333}  
-        .ld-sub{margin-top:8px;font-size:10px;color:#222;letter-spacing:1px}  
-        @media(max-width:900px){.logo{font-size:13px}.ctrls{gap:3px}.btn{padding:4px 8px;font-size:7px}  
-            .ip{width:95vw}.ip.open{right:2.5vw}.pd{min-width:42px;padding:4px 5px 2px}.pd-orb{width:24px;height:24px}.pd-name{font-size:5.5px}}  
+        * { margin: 0; padding: 0; box-sizing: border-box; }  
+        body { overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, sans-serif; }  
+        canvas { display: block; }  
+          
+        #ui-overlay {  
+            position: fixed;  
+            top: 0;  
+            left: 0;  
+            width: 100%;  
+            height: 100%;  
+            pointer-events: none;  
+            z-index: 10;  
+        }  
+          
+        #planet-info {  
+            position: fixed;  
+            bottom: 20px;  
+            left: 50%;  
+            transform: translateX(-50%);  
+            background: rgba(0,0,0,0.85);  
+            border: 1px solid rgba(100,150,255,0.3);  
+            border-radius: 15px;  
+            padding: 20px 30px;  
+            color: #fff;  
+            pointer-events: auto;  
+            display: none;  
+            min-width: 350px;  
+            max-width: 500px;  
+            backdrop-filter: blur(10px);  
+        }  
+          
+        #planet-info h2 {  
+            font-size: 24px;  
+            margin-bottom: 8px;  
+            background: linear-gradient(90deg, #64b5f6, #ce93d8);  
+            -webkit-background-clip: text;  
+            -webkit-text-fill-color: transparent;  
+        }  
+          
+        #planet-info .stats {  
+            display: grid;  
+            grid-template-columns: 1fr 1fr;  
+            gap: 5px;  
+            font-size: 13px;  
+            color: #aac;  
+        }  
+          
+        #controls {  
+            position: fixed;  
+            top: 20px;  
+            right: 20px;  
+            background: rgba(0,0,0,0.8);  
+            border: 1px solid rgba(100,150,255,0.3);  
+            border-radius: 12px;  
+            padding: 15px;  
+            color: #fff;  
+            pointer-events: auto;  
+            font-size: 13px;  
+            backdrop-filter: blur(10px);  
+        }  
+          
+        #controls h3 {  
+            margin-bottom: 10px;  
+            color: #64b5f6;  
+        }  
+          
+        #controls div { margin: 5px 0; }  
+          
+        #speed-control {  
+            width: 100%;  
+            margin-top: 5px;  
+            accent-color: #64b5f6;  
+        }  
+          
+        #music-toggle, #ambient-toggle {  
+            pointer-events: auto;  
+            background: rgba(100,150,255,0.2);  
+            border: 1px solid rgba(100,150,255,0.4);  
+            color: #fff;  
+            padding: 6px 14px;  
+            border-radius: 6px;  
+            cursor: pointer;  
+            font-size: 12px;  
+            margin-top: 5px;  
+            margin-right: 5px;  
+        }  
+          
+        #music-toggle:hover, #ambient-toggle:hover {  
+            background: rgba(100,150,255,0.4);  
+        }  
+          
+        #crosshair {  
+            position: fixed;  
+            top: 50%;  
+            left: 50%;  
+            transform: translate(-50%, -50%);  
+            width: 20px;  
+            height: 20px;  
+            pointer-events: none;  
+            opacity: 0.3;  
+        }  
+          
+        #crosshair::before, #crosshair::after {  
+            content: '';  
+            position: absolute;  
+            background: #fff;  
+        }  
+          
+        #crosshair::before {  
+            width: 2px;  
+            height: 100%;  
+            left: 50%;  
+            transform: translateX(-50%);  
+        }  
+          
+        #crosshair::after {  
+            width: 100%;  
+            height: 2px;  
+            top: 50%;  
+            transform: translateY(-50%);  
+        }  
+          
+        #now-playing {  
+            position: fixed;  
+            top: 20px;  
+            left: 20px;  
+            background: rgba(0,0,0,0.8);  
+            border: 1px solid rgba(100,150,255,0.3);  
+            border-radius: 12px;  
+            padding: 12px 18px;  
+            color: #fff;  
+            pointer-events: none;  
+            font-size: 13px;  
+            backdrop-filter: blur(10px);  
+            display: none;  
+        }  
+          
+        #now-playing .label {  
+            color: #64b5f6;  
+            font-size: 10px;  
+            text-transform: uppercase;  
+            letter-spacing: 2px;  
+        }  
+          
+        #now-playing .track {  
+            margin-top: 4px;  
+            font-size: 14px;  
+            color: #ce93d8;  
+        }  
+          
+        #visualizer {  
+            position: fixed;  
+            bottom: 0;  
+            left: 0;  
+            width: 100%;  
+            height: 40px;  
+            pointer-events: none;  
+            opacity: 0.3;  
+        }  
     </style>  
 </head>  
-<body>
-
-<div class="ld" id="ld">  
-    <div class="ld-t">COSMOS</div>  
-    <div class="ld-bg"><div class="ld-f" id="ldf"></div></div>  
-    <div class="ld-m" id="ldm">LOADING TEXTURES...</div>  
-    <div class="ld-sub" id="ldsub"></div>  
-</div>
-
-<div class="hud top">  
-    <div><div class="logo">COSMOS</div><div class="logo-s">3D SOLAR SYSTEM</div></div>  
-    <div class="ctrls">  
-        <button class="btn on" id="bOrb" onclick="togOrb()">ORBITS</button>  
-        <button class="btn" id="bLab" onclick="togLab()">LABELS</button>  
-        <button class="btn" id="bMus" onclick="togMus()">🔇 MUSIC</button>  
-        <button class="btn" id="bNov" onclick="doNova()">⚡ NOVA</button>  
-        <button class="btn" id="bRst" onclick="resetCam()">⌂ RESET</button>  
-    </div>  
-</div>
-
-<div class="focusName" id="focusName"></div>  
-<div class="hint">DRAG TO ROTATE · SCROLL TO ZOOM · CLICK PLANET FOR INFO</div>  
-<div class="hud bot"><div class="pbar" id="pbar"></div></div>
-
-<div class="side lc">  
-    <div class="sv2" id="spdV">1.0x</div>  
-    <div class="sb" onclick="spdUp()">▶▶</div>  
-    <div class="sb" onclick="spdDn()">▶</div>  
-    <div class="sl2">SPEED</div>  
-</div>  
-<div class="side rc">  
-    <div class="sb" onclick="zmIn()" style="font-weight:bold">+</div>  
-    <div class="sv2" id="zmV">1.0x</div>  
-    <div class="sb" onclick="zmOut()" style="font-weight:bold">−</div>  
-    <div class="sl2">ZOOM</div>  
-    <div style="height:6px"></div>  
-    <div class="sb hm" onclick="resetCam()">HOME</div>  
-</div>
-
-<div class="ip" id="ip">  
-    <div class="icard" id="icard" style="--ac:#00d4ff;--ac2:rgba(0,212,255,.3)">  
-        <button class="xb" onclick="closeInfo()">✕</button>  
-        <div class="hero-wrap"><img class="hero-img" id="heroImg" src=""><div class="hero-overlay"></div></div>  
-        <div class="ic-body">  
-            <div class="ph">  
-                <div class="picon"><img id="picImg" src=""></div>  
-                <div><div class="pn" id="pnm"></div><div class="pty" id="pty"></div></div>  
+<body>  
+    <canvas id="canvas"></canvas>  
+    <div id="ui-overlay">  
+        <div id="crosshair"></div>  
+        <div id="planet-info">  
+            <h2 id="info-name"></h2>  
+            <p id="info-desc" style="font-size:13px;color:#889;margin-bottom:8px;"></p>  
+            <div class="stats" id="info-stats"></div>  
+        </div>  
+        <div id="controls">  
+            <h3>🌌 Controls</h3>  
+            <div>🖱️ Drag to orbit</div>  
+            <div>📜 Scroll to zoom</div>  
+            <div>🖱️ Click planet to focus</div>  
+            <div>⎋ ESC to unfocus</div>  
+            <div style="margin-top:10px;">  
+                <label>Speed: <span id="speed-val">1x</span></label>  
+                <input type="range" id="speed-control" min="0" max="5" step="0.1" value="1">  
             </div>  
-            <div class="sg" id="pst"></div>  
-            <div class="fb"><div class="fti">✦ COOL FACT</div><div class="ftx" id="pft"></div></div>  
-            <div class="mb" id="pmb"><div class="mla">KNOWN MOONS</div><div class="mtt" id="pmt"></div></div>  
-            <div class="pcred" id="pcred"></div>  
+            <div style="margin-top:8px;">  
+                <button id="ambient-toggle">🎵 Space Ambient</button>  
+                <button id="music-toggle">🎶 Planet Music</button>  
+            </div>  
+        </div>  
+        <div id="now-playing">  
+            <div class="label">♪ Now Playing</div>  
+            <div class="track" id="track-name">Deep Space Ambient</div>  
         </div>  
     </div>  
-</div>
+    <canvas id="visualizer"></canvas>
 
-<script>  
-/*  
- * ============================================  
- *  TEXTURE & PHOTO PATHS  
- *  These point to YOUR local files in the repo  
- * ============================================  
- */  
-const TEX = {  
-    sun:         "textures/2k_sun.jpg",  
-    mercury:     "textures/2k_mercury.jpg",  
-    venus:       "textures/2k_venus_atmosphere.jpg",  
-    earth:       "textures/2k_earth_daymap.jpg",  
-    earthClouds: "textures/2k_earth_clouds.jpg",  
-    mars:        "textures/2k_mars.jpg",  
-    jupiter:     "textures/2k_jupiter.jpg",  
-    saturn:      "textures/2k_saturn.jpg",  
-    saturnRing:  "textures/2k_saturn_ring_alpha.png",  
-    uranus:      "textures/2k_uranus.jpg",  
-    neptune:     "textures/2k_neptune.jpg",  
-};
+    <script>  
+    const canvas = document.getElementById('canvas');  
+    const ctx = canvas.getContext('2d');  
+    const vizCanvas = document.getElementById('visualizer');  
+    const vizCtx = vizCanvas.getContext('2d');
 
-const PHOTOS = {  
-    Sun:     { img:"photos/sun.jpg",     credit:"📷 NASA/SDO" },  
-    Mercury: { img:"photos/mercury.jpg", credit:"📷 NASA/MESSENGER" },  
-    Venus:   { img:"photos/venus.jpg",   credit:"📷 NASA/JPL-Caltech" },  
-    Earth:   { img:"photos/earth.jpg",   credit:"📷 NASA/Apollo 17" },  
-    Mars:    { img:"photos/mars.jpg",    credit:"📷 NASA/JPL" },  
-    Jupiter: { img:"photos/jupiter.jpg", credit:"📷 NASA/Juno" },  
-    Saturn:  { img:"photos/saturn.jpg",  credit:"📷 NASA/Cassini" },  
-    Uranus:  { img:"photos/uranus.jpg",  credit:"📷 NASA/Voyager 2" },  
-    Neptune: { img:"photos/neptune.jpg", credit:"📷 NASA/Voyager 2" },  
-    Pluto:   { img:"photos/pluto.jpg",   credit:"📷 NASA/New Horizons" }  
-};
+    let W, H;  
+    function resize() {  
+        W = canvas.width = window.innerWidth;  
+        H = canvas.height = window.innerHeight;  
+        vizCanvas.width = W;  
+        vizCanvas.height = 40;  
+    }  
+    resize();  
+    window.addEventListener('resize', resize);
 
-// Planet data  
-const DATA=[  
-{name:"Sun",type:"G-Type Main Sequence Star",r:5,orbit:0,spd:0,tex:'sun',  
- stats:{Diameter:"1,392,700 km",Mass:"1.989 × 10³⁰ kg",Temperature:"5,778 K",Age:"4.6 Billion yrs"},  
- fact:"The Sun accounts for 99.86% of the Solar System's mass. It fuses 600 million tons of hydrogen every second! The core reaches 15 million°C. Light takes ~8 minutes to reach Earth.",  
- moons:[],css:"#FDB813",g:["#FDB813","#FF6B35"]},  
-{name:"Mercury",type:"Terrestrial Planet",r:.5,orbit:9,spd:4.15,tex:'mercury',  
- stats:{Diameter:"4,879 km",Distance:"57.9M km",Day:"59 Earth days",Year:"88 days"},  
- fact:"Mercury swings from -180°C to 430°C — the wildest temperature swings in the Solar System. Its massive iron core is 85% of its radius. It has ice in permanently shadowed craters!",  
- moons:[],css:"#B5B5B5",g:["#C2C2C2","#757575"]},  
-{name:"Venus",type:"Terrestrial Planet",r:.9,orbit:13,spd:1.62,tex:'venus',  
- stats:{Diameter:"12,104 km",Distance:"108.2M km",Day:"243 Earth days",Year:"225 days"},  
- fact:"Venus rotates BACKWARDS so the Sun rises in the West! At 465°C it's the hottest planet — its crushing CO₂ atmosphere is 90× Earth's pressure with sulfuric acid clouds!",  
- moons:[],css:"#E8CDA0",g:["#EDD59E","#C08B50"]},  
-{name:"Earth",type:"Terrestrial Planet",r:1,orbit:18,spd:1.0,tex:'earth',  
- stats:{Diameter:"12,742 km",Distance:"149.6M km",Day:"24 hours",Year:"365.25 days"},  
- fact:"Earth is the only known planet with confirmed life, liquid oceans covering 71% of its surface, and active plate tectonics. Our magnetic field shields us from deadly solar radiation!",  
- moons:["Moon"],css:"#4A90D9",g:["#6B93D6","#2E5E8E"]},  
-{name:"Mars",type:"Terrestrial Planet",r:.7,orbit:23,spd:.53,tex:'mars',  
- stats:{Diameter:"6,779 km",Distance:"227.9M km",Day:"24h 37min",Year:"687 days"},  
- fact:"Mars has Olympus Mons (21.9km tall, 3× Everest) and Valles Marineris (4,000 km canyon)! It has polar ice caps and planet-engulfing dust storms lasting months!",  
- moons:["Phobos","Deimos"],css:"#E27B58",g:["#E27B58","#8B3A2A"]},  
-{name:"Jupiter",type:"Gas Giant",r:3.2,orbit:36,spd:.084,tex:'jupiter',  
- stats:{Diameter:"139,820 km",Distance:"778.5M km",Day:"9h 56min",Year:"11.86 yrs"},  
- fact:"Jupiter's Great Red Spot is a 350+ year old storm larger than Earth! It has 95 known moons — Europa may harbor life under its icy ocean. Jupiter's gravity shields Earth from asteroids!",  
- moons:["Io","Europa","Ganymede","Callisto","+91 more"],css:"#C88B3A",g:["#D4A06A","#8B6914"]},  
-{name:"Saturn",type:"Gas Giant",r:2.7,orbit:48,spd:.034,tex:'saturn',hasRings:true,  
- stats:{Diameter:"116,460 km",Distance:"1.43B km",Day:"10h 42min",Year:"29.46 yrs"},  
- fact:"Saturn's rings span 282,000 km but are only 10m thick! It could float in water. Inside Saturn, extreme pressure crushes carbon into diamond rain! Titan has methane lakes.",  
- moons:["Titan","Enceladus","Mimas","Rhea","+92 more"],css:"#E8D5A3",g:["#F0DCA0","#A08040"]},  
-{name:"Uranus",type:"Ice Giant",r:1.8,orbit:58,spd:.012,tex:'uranus',hasRings:true,thinR:true,  
- stats:{Diameter:"50,724 km",Distance:"2.87B km",Day:"17h 14min",Year:"84 yrs"},  
- fact:"Uranus rolls on its SIDE with a 98° tilt — knocked over by a massive collision! Coldest atmosphere at -224°C. Its 27 moons are named after Shakespeare characters!",  
- moons:["Miranda","Ariel","Umbriel","Titania","+23 more"],css:"#72C5D0",g:["#8FE0E8","#5BA3AD"]},  
-{name:"Neptune",type:"Ice Giant",r:1.7,orbit:68,spd:.006,tex:'neptune',  
- stats:{Diameter:"49,244 km",Distance:"4.5B km",Day:"16h 6min",Year:"165 yrs"},  
- fact:"Neptune has supersonic winds at 2,100 km/h! It radiates 2.6× more heat than it receives. Triton orbits backwards with nitrogen geysers and will eventually be torn apart!",  
- moons:["Triton","Nereid","Proteus","+13 more"],css:"#3E54E8",g:["#5B6AE8","#2B3BAF"]},  
-{name:"Pluto",type:"Dwarf Planet",r:.35,orbit:78,spd:.004,tex:'pluto',  
- stats:{Diameter:"2,377 km",Distance:"5.9B km",Day:"6.4 Earth days",Year:"248 yrs"},  
- fact:"Pluto has a giant heart-shaped glacier (Tombaugh Regio) of nitrogen ice! Charon is so big they orbit each other. Visited by New Horizons in 2015!",  
- moons:["Charon","Nix","Hydra","Kerberos","Styx"],css:"#C4A882",g:["#D4BC9E","#A68B6B"]}  
-];
+    // ============ AUDIO ENGINE ============  
+    let audioCtx = null;  
+    let masterGain = null;  
+    let ambientEnabled = false;  
+    let planetMusicEnabled = false;  
+    let ambientNodes = [];  
+    let planetMusicNodes = [];  
+    let currentPlanetMusic = null;  
+    let analyser = null;  
+    let analyserData = null;
 
-// ===== THREE.JS =====  
-const renderer=new THREE.WebGLRenderer({antialias:true});  
-renderer.setSize(window.innerWidth,window.innerHeight);  
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));  
-renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;  
-document.body.prepend(renderer.domElement);  
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x000005);  
-const camera=new THREE.PerspectiveCamera(50,window.innerWidth/window.innerHeight,.1,2000);
+    function initAudio() {  
+        if (audioCtx) return;  
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();  
+        masterGain = audioCtx.createGain();  
+        masterGain.gain.value = 0.5;  
+        masterGain.connect(audioCtx.destination);  
+          
+        analyser = audioCtx.createAnalyser();  
+        analyser.fftSize = 256;  
+        analyserData = new Uint8Array(analyser.frequencyBinCount);  
+        masterGain.connect(analyser);  
+    }
 
-let camTarget=new THREE.Vector3(),tCamTarget=new THREE.Vector3();  
-let camTheta=.4,camPhi=1.1,camDist=55,tTheta=.4,tPhi=1.1,tDist=55;  
-let isDrag=false,prevMX=0,prevMY=0,autoRot=true;  
-let showOrb=true,showLab=false,spdMul=1,selected=null,selIdx=-1;  
-let musOn=false,actx,oscArr=[],novaOn=false,novaT=0;
+    // Deep space ambient - layered drones  
+    function startAmbient() {  
+        if (!audioCtx) initAudio();  
+        stopAmbient();  
+        ambientEnabled = true;  
+          
+        const ambientGain = audioCtx.createGain();  
+        ambientGain.gain.value = 0;  
+        ambientGain.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 3);  
+        ambientGain.connect(masterGain);  
+          
+        // Deep bass drone  
+        const bassOsc = audioCtx.createOscillator();  
+        bassOsc.type = 'sine';  
+        bassOsc.frequency.value = 30;  
+        const bassGain = audioCtx.createGain();  
+        bassGain.gain.value = 0.4;  
+        bassOsc.connect(bassGain);  
+        bassGain.connect(ambientGain);  
+        bassOsc.start();  
+          
+        // Slow LFO on bass  
+        const bassLfo = audioCtx.createOscillator();  
+        bassLfo.frequency.value = 0.05;  
+        const bassLfoGain = audioCtx.createGain();  
+        bassLfoGain.gain.value = 5;  
+        bassLfo.connect(bassLfoGain);  
+        bassLfoGain.connect(bassOsc.frequency);  
+        bassLfo.start();  
+          
+        // Mid harmonic pad  
+        const padFreqs = [55, 82.5, 110, 165];  
+        const padOscs = padFreqs.map(f => {  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'sine';  
+            osc.frequency.value = f;  
+            const g = audioCtx.createGain();  
+            g.gain.value = 0.08;  
+            osc.connect(g);  
+            g.connect(ambientGain);  
+              
+            // Gentle frequency wobble  
+            const lfo = audioCtx.createOscillator();  
+            lfo.frequency.value = 0.02 + Math.random() * 0.05;  
+            const lfoG = audioCtx.createGain();  
+            lfoG.gain.value = 0.5;  
+            lfo.connect(lfoG);  
+            lfoG.connect(osc.frequency);  
+            lfo.start();  
+            osc.start();  
+            return { osc, g, lfo, lfoG };  
+        });  
+          
+        // Filtered noise - cosmic wind  
+        const noiseSize = audioCtx.sampleRate * 4;  
+        const noiseBuffer = audioCtx.createBuffer(1, noiseSize, audioCtx.sampleRate);  
+        const noiseData = noiseBuffer.getChannelData(0);  
+        for (let i = 0; i < noiseSize; i++) {  
+            noiseData[i] = (Math.random() * 2 - 1) * 0.5;  
+        }  
+        const noise = audioCtx.createBufferSource();  
+        noise.buffer = noiseBuffer;  
+        noise.loop = true;  
+          
+        const noiseFilter = audioCtx.createBiquadFilter();  
+        noiseFilter.type = 'bandpass';  
+        noiseFilter.frequency.value = 200;  
+        noiseFilter.Q.value = 0.5;  
+          
+        // Sweep the filter  
+        const filterLfo = audioCtx.createOscillator();  
+        filterLfo.frequency.value = 0.03;  
+        const filterLfoGain = audioCtx.createGain();  
+        filterLfoGain.gain.value = 150;  
+        filterLfo.connect(filterLfoGain);  
+        filterLfoGain.connect(noiseFilter.frequency);  
+        filterLfo.start();  
+          
+        const noiseGain = audioCtx.createGain();  
+        noiseGain.gain.value = 0.06;  
+        noise.connect(noiseFilter);  
+        noiseFilter.connect(noiseGain);  
+        noiseGain.connect(ambientGain);  
+        noise.start();  
+          
+        // High ethereal tones - random shimmering  
+        const shimmerGain = audioCtx.createGain();  
+        shimmerGain.gain.value = 0.03;  
+        shimmerGain.connect(ambientGain);  
+          
+        function createShimmer() {  
+            if (!ambientEnabled) return;  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'sine';  
+            const baseFreq = 400 + Math.random() * 2000;  
+            osc.frequency.value = baseFreq;  
+            const g = audioCtx.createGain();  
+            const dur = 3 + Math.random() * 8;  
+            g.gain.setValueAtTime(0, audioCtx.currentTime);  
+            g.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + dur * 0.3);  
+            g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + dur);  
+            osc.connect(g);  
+            g.connect(shimmerGain);  
+            osc.start();  
+            osc.stop(audioCtx.currentTime + dur);  
+            setTimeout(createShimmer, (2000 + Math.random() * 6000));  
+        }  
+        createShimmer();  
+          
+        // Reverb simulation using delay  
+        const delay1 = audioCtx.createDelay();  
+        delay1.delayTime.value = 0.3;  
+        const delay1Gain = audioCtx.createGain();  
+        delay1Gain.gain.value = 0.3;  
+        const delay2 = audioCtx.createDelay();  
+        delay2.delayTime.value = 0.7;  
+        const delay2Gain = audioCtx.createGain();  
+        delay2Gain.gain.value = 0.2;  
+          
+        ambientGain.connect(delay1);  
+        delay1.connect(delay1Gain);  
+        delay1Gain.connect(ambientGain);  
+        ambientGain.connect(delay2);  
+        delay2.connect(delay2Gain);  
+        delay2Gain.connect(ambientGain);  
+          
+        ambientNodes = { ambientGain, bassOsc, bassLfo, bassGain, bassLfoGain, padOscs, noise, noiseFilter, noiseGain, filterLfo, filterLfoGain, shimmerGain, delay1, delay1Gain, delay2, delay2Gain };  
+          
+        document.getElementById('ambient-toggle').textContent = '🔇 Stop Ambient';  
+        showNowPlaying('Deep Space Ambient');  
+    }
 
-scene.add(new THREE.AmbientLight(0x222244,.3));  
-const sunPt=new THREE.PointLight(0xfff5e0,2.8,500,1.2);scene.add(sunPt);  
-const sunPt2=new THREE.PointLight(0xffaa44,1.5,250,2);scene.add(sunPt2);  
-const fillLight=new THREE.PointLight(0x6688cc,0,60,2);fillLight.visible=false;scene.add(fillLight);  
-const camFill=new THREE.DirectionalLight(0x4466aa,0);scene.add(camFill);
+    function stopAmbient() {  
+        ambientEnabled = false;  
+        if (ambientNodes.ambientGain) {  
+            try {  
+                ambientNodes.ambientGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1);  
+                setTimeout(() => {  
+                    try {  
+                        ambientNodes.bassOsc?.stop();  
+                        ambientNodes.bassLfo?.stop();  
+                        ambientNodes.noise?.stop();  
+                        ambientNodes.filterLfo?.stop();  
+                        ambientNodes.padOscs?.forEach(p => { p.osc.stop(); p.lfo.stop(); });  
+                    } catch(e) {}  
+                }, 1100);  
+            } catch(e) {}  
+        }  
+        ambientNodes = [];  
+        document.getElementById('ambient-toggle').textContent = '🎵 Space Ambient';  
+    }
 
-// Stars  
-const stG=new THREE.BufferGeometry(),SN=12000,sP=new Float32Array(SN*3),sC=new Float32Array(SN*3);  
-for(let i=0;i<SN;i++){const th=Math.random()*6.28,ph=Math.acos(2*Math.random()-1),r=300+Math.random()*600;  
-    sP[i*3]=r*Math.sin(ph)*Math.cos(th);sP[i*3+1]=r*Math.sin(ph)*Math.sin(th);sP[i*3+2]=r*Math.cos(ph);  
-    const t=Math.random();sC[i*3]=.8+t*.2;sC[i*3+1]=.75+t*.25;sC[i*3+2]=.85+(1-t)*.15;}  
-stG.setAttribute('position',new THREE.BufferAttribute(sP,3));stG.setAttribute('color',new THREE.BufferAttribute(sC,3));  
-scene.add(new THREE.Points(stG,new THREE.PointsMaterial({size:.7,vertexColors:true,transparent:true,opacity:.85,sizeAttenuation:true})));
+    // Planet-specific music definitions  
+    const planetMusicDefs = {  
+        'Sun': {  
+            name: 'Solar Forge',  
+            baseFreq: 55,  
+            scale: [0, 3, 5, 7, 10, 12], // minor pentatonic  
+            tempo: 0.8,  
+            style: 'drone', // massive deep drone with crackling  
+            color: '#ff6600'  
+        },  
+        'Mercury': {  
+            name: 'Swift Messenger',  
+            baseFreq: 440,  
+            scale: [0, 2, 4, 5, 7, 9, 11], // major  
+            tempo: 3.5,  
+            style: 'fast-arpeggios',  
+            color: '#b0b0b0'  
+        },  
+        'Venus': {  
+            name: 'Veiled Beauty',  
+            baseFreq: 220,  
+            scale: [0, 2, 3, 5, 7, 8, 10], // natural minor  
+            tempo: 1.2,  
+            style: 'lush-pad',  
+            color: '#ffcc66'  
+        },  
+        'Earth': {  
+            name: 'Blue Marble',  
+            baseFreq: 261.63,  
+            scale: [0, 2, 4, 5, 7, 9, 11], // C major  
+            tempo: 1.5,  
+            style: 'melodic',  
+            color: '#4488ff'  
+        },  
+        'Mars': {  
+            name: 'Red Desert',  
+            baseFreq: 146.83,  
+            scale: [0, 1, 4, 5, 7, 8, 10], // phrygian  
+            tempo: 1.0,  
+            style: 'martial',  
+            color: '#ff4422'  
+        },  
+        'Jupiter': {  
+            name: 'King of Worlds',  
+            baseFreq: 82.41,  
+            scale: [0, 2, 4, 7, 9], // major pentatonic  
+            tempo: 0.6,  
+            style: 'majestic',  
+            color: '#dd9955'  
+        },  
+        'Saturn': {  
+            name: 'Ringed Sovereign',  
+            baseFreq: 110,  
+            scale: [0, 2, 3, 5, 7, 9, 10], // dorian  
+            tempo: 0.7,  
+            style: 'ethereal',  
+            color: '#ccbb77'  
+        },  
+        'Uranus': {  
+            name: 'Ice Giant Dreams',  
+            baseFreq: 196,  
+            scale: [0, 1, 3, 5, 6, 8, 10], // locrian  
+            tempo: 0.9,  
+            style: 'glitch',  
+            color: '#66ccdd'  
+        },  
+        'Neptune': {  
+            name: 'Deep Blue Abyss',  
+            baseFreq: 164.81,  
+            scale: [0, 2, 3, 6, 7, 8, 11], // harmonic minor-ish  
+            tempo: 0.5,  
+            style: 'oceanic',  
+            color: '#3355ff'  
+        },  
+        'Pluto': {  
+            name: 'Frozen Exile',  
+            baseFreq: 130.81,  
+            scale: [0, 1, 3, 4, 6, 7, 9, 10], // diminished  
+            tempo: 0.4,  
+            style: 'frozen',  
+            color: '#998877'  
+        }  
+    };
 
-// Fallback texture  
-function makeFallback(cols){  
-    const c=document.createElement('canvas');c.width=512;c.height=256;const x=c.getContext('2d');  
-    const g=x.createLinearGradient(0,0,512,256);cols.forEach((cl,i)=>g.addColorStop(i/(cols.length-1),cl));  
-    x.fillStyle=g;x.fillRect(0,0,512,256);  
-    for(let i=0;i<300;i++){x.fillStyle=`rgba(${128+Math.random()*127},${128+Math.random()*127},${128+Math.random()*127},.04)`;  
-        x.beginPath();x.arc(Math.random()*512,Math.random()*256,1+Math.random()*4,0,6.28);x.fill();}  
-    return new THREE.CanvasTexture(c);  
-}  
-const FB={sun:['#fff8e0','#ff9900','#cc5500'],mercury:['#c2c2c2','#9e9e9e','#757575'],venus:['#edd59e','#d4a56a','#c08b50'],  
-    earth:['#1a4d8a','#4488cc','#2d7a3a'],mars:['#d46840','#b84828','#9a3318'],jupiter:['#c4a06a','#a07848','#d8b880'],  
-    saturn:['#f0e0b0','#e8d5a3','#c4a265'],uranus:['#90dce8','#72c5d0','#5ba3ad'],neptune:['#3e54e8','#2b3baf','#4060e0'],  
-    pluto:['#c4a882','#a68b6b','#8b7355']};
+    function getFreqFromScale(def, degree) {  
+        const octave = Math.floor(degree / def.scale.length);  
+        const idx = ((degree % def.scale.length) + def.scale.length) % def.scale.length;  
+        return def.baseFreq * Math.pow(2, (def.scale[idx] + octave * 12) / 12);  
+    }
 
-// Load textures  
-const loader=new THREE.TextureLoader();  
-const loaded={};let texDone=0,texTotal=0;
+    function startPlanetMusic(planetName) {  
+        if (!audioCtx) initAudio();  
+        stopPlanetMusic();  
+          
+        const def = planetMusicDefs[planetName];  
+        if (!def) return;  
+          
+        planetMusicEnabled = true;  
+        currentPlanetMusic = planetName;  
+          
+        const mainGain = audioCtx.createGain();  
+        mainGain.gain.value = 0;  
+        mainGain.gain.linearRampToValueAtTime(0.25, audioCtx.currentTime + 2);  
+        mainGain.connect(masterGain);  
+          
+        // Reverb-like delay  
+        const delay = audioCtx.createDelay();  
+        delay.delayTime.value = 0.4;  
+        const delayGain = audioCtx.createGain();  
+        delayGain.gain.value = 0.25;  
+        const delay2 = audioCtx.createDelay();  
+        delay2.delayTime.value = 0.8;  
+        const delay2Gain = audioCtx.createGain();  
+        delay2Gain.gain.value = 0.15;  
+        mainGain.connect(delay);  
+        delay.connect(delayGain);  
+        delayGain.connect(mainGain);  
+        mainGain.connect(delay2);  
+        delay2.connect(delay2Gain);  
+        delay2Gain.connect(mainGain);  
+          
+        const nodes = { mainGain, delay, delayGain, delay2, delay2Gain, intervals: [], oscs: [] };  
+          
+        switch(def.style) {  
+            case 'drone': createSunMusic(def, mainGain, nodes); break;  
+            case 'fast-arpeggios': createMercuryMusic(def, mainGain, nodes); break;  
+            case 'lush-pad': createVenusMusic(def, mainGain, nodes); break;  
+            case 'melodic': createEarthMusic(def, mainGain, nodes); break;  
+            case 'martial': createMarsMusic(def, mainGain, nodes); break;  
+            case 'majestic': createJupiterMusic(def, mainGain, nodes); break;  
+            case 'ethereal': createSaturnMusic(def, mainGain, nodes); break;  
+            case 'glitch': createUranusMusic(def, mainGain, nodes); break;  
+            case 'oceanic': createNeptuneMusic(def, mainGain, nodes); break;  
+            case 'frozen': createPlutoMusic(def, mainGain, nodes); break;  
+        }  
+          
+        planetMusicNodes = nodes;  
+        document.getElementById('music-toggle').textContent = '🔇 Stop Music';  
+        showNowPlaying(def.name + ' — ' + planetName);  
+    }
 
-function loadT(key,url){texTotal++;return new Promise(r=>{  
-    loader.load(url,t=>{t.anisotropy=renderer.capabilities.getMaxAnisotropy();loaded[key]=t;texDone++;updLd();r(t);},  
-    undefined,()=>{console.warn('Failed:',key);texDone++;updLd();r(null);});});}
+    function createSunMusic(def, output, nodes) {  
+        // Massive drone with overtones and crackling  
+        [1, 1.5, 2, 3, 4, 5].forEach((mult, i) => {  
+            const osc = audioCtx.createOscillator();  
+            osc.type = i < 2 ? 'sawtooth' : 'sine';  
+            osc.frequency.value = def.baseFreq * mult;  
+            const g = audioCtx.createGain();  
+            g.gain.value = 0.15 / (i + 1);  
+            osc.connect(g);  
+            g.connect(output);  
+              
+            const lfo = audioCtx.createOscillator();  
+            lfo.frequency.value = 0.1 + Math.random() * 0.3;  
+            const lfoG = audioCtx.createGain();  
+            lfoG.gain.value = mult * 2;  
+            lfo.connect(lfoG);  
+            lfoG.connect(osc.frequency);  
+            lfo.start();  
+            osc.start();  
+            nodes.oscs.push(osc, lfo);  
+        });  
+          
+        // Solar crackle  
+        function crackle() {  
+            if (!planetMusicEnabled || currentPlanetMusic !== 'Sun') return;  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'square';  
+            osc.frequency.value = 2000 + Math.random() * 5000;  
+            const g = audioCtx.createGain();  
+            const t = audioCtx.currentTime;  
+            g.gain.setValueAtTime(0.02, t);  
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);  
+            osc.connect(g);  
+            g.connect(output);  
+            osc.start(t);  
+            osc.stop(t + 0.05);  
+            setTimeout(crackle, 50 + Math.random() * 300);  
+        }  
+        crackle();  
+          
+        // Low rumble pulse  
+        const rumbleInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'sine';  
+            osc.frequency.value = 20 + Math.random() * 30;  
+            const g = audioCtx.createGain();  
+            const t = audioCtx.currentTime;  
+            g.gain.setValueAtTime(0, t);  
+            g.gain.linearRampToValueAtTime(0.2, t + 1);  
+            g.gain.linearRampToValueAtTime(0, t + 3);  
+            osc.connect(g);  
+            g.connect(output);  
+            osc.start(t);  
+            osc.stop(t + 3);  
+        }, 3000);  
+        nodes.intervals.push(rumbleInt);  
+    }
 
-function updLd(){  
-    const p=texTotal?Math.round((texDone/texTotal)*100):0;  
-    document.getElementById('ldf').style.width=p+'%';  
-    const m=['LOADING NASA TEXTURES...','MAPPING SURFACES...','BUILDING ORBITS...','CALIBRATING...','ALMOST READY...','READY ✦'];  
-    document.getElementById('ldm').textContent=m[Math.min(Math.floor(p/18),m.length-1)];  
-    document.getElementById('ldsub').textContent=texDone+'/'+texTotal+' textures';}
+    function createMercuryMusic(def, output, nodes) {  
+        // Fast, playful arpeggios - quick and nimble like Mercury  
+        let step = 0;  
+        const arpInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            const freq = getFreqFromScale(def, step);  
+            const osc = audioCtx.createOscillator();  
+            osc.type = step % 3 === 0 ? 'triangle' : 'sine';  
+            osc.frequency.value = freq;  
+            const g = audioCtx.createGain();  
+            const t = audioCtx.currentTime;  
+            g.gain.setValueAtTime(0.15, t);  
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);  
+            osc.connect(g);  
+            g.connect(output);  
+            osc.start(t);  
+            osc.stop(t + 0.15);  
+            step = (step + 1) % 12;  
+              
+            // Occasional quick trill  
+            if (Math.random() < 0.2) {  
+                setTimeout(() => {  
+                    if (!planetMusicEnabled) return;  
+                    const o2 = audioCtx.createOscillator();  
+                    o2.type = 'sine';  
+                    o2.frequency.value = freq * 2;  
+                    const g2 = audioCtx.createGain();  
+                    const t2 = audioCtx.currentTime;  
+                    g2.gain.setValueAtTime(0.08, t2);  
+                    g2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.08);  
+                    o2.connect(g2);  
+                    g2.connect(output);  
+                    o2.start(t2);  
+                    o2.stop(t2 + 0.08);  
+                }, 60);  
+            }  
+        }, 120);  
+        nodes.intervals.push(arpInt);  
+          
+        // Light metallic percussion  
+        const percInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'square';  
+            osc.frequency.value = 800 + Math.random() * 2000;  
+            const g = audioCtx.createGain();  
+            const t = audioCtx.currentTime;  
+            g.gain.setValueAtTime(0.03, t);  
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.03);  
+            osc.connect(g);  
+            g.connect(output);  
+            osc.start(t);  
+            osc.stop(t + 0.03);  
+        }, 240);  
+        nodes.intervals.push(percInt);  
+    }
 
-const meshes=[],orbLines=[],lbls=[],ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
+    function createVenusMusic(def, output, nodes) {  
+        // Lush, warm pads with gentle movement - romantic and mysterious  
+        const padNotes = [0, 3, 5, 7, 10];  
+        padNotes.forEach((note, i) => {  
+            const freq = getFreqFromScale(def, note > 4 ? note - def.scale.length : note);  
+            // Use base freq directly for pads  
+            const f = def.baseFreq * Math.pow(2, def.scale[note % def.scale.length] / 12);  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'sine';  
+            osc.frequency.value = f;  
+            const osc2 = audioCtx.createOscillator();  
+            osc2.type = 'triangle';  
+            osc2.frequency.value = f * 1.002; // slight detune for richness  
+            const g = audioCtx.createGain();  
+            g.gain.value = 0.06;  
+            const lfo = audioCtx.createOscillator();  
+            lfo.frequency.value = 0.15 + i * 0.05;  
+            const lfoG = audioCtx.createGain();  
+            lfoG.gain.value = 0.03;  
+            lfo.connect(lfoG);  
+            lfoG.connect(g.gain);  
+            osc.connect(g);  
+            osc2.connect(g);  
+            g.connect(output);  
+            osc.start();  
+            osc2.start();  
+            lfo.start();  
+            nodes.oscs.push(osc, osc2, lfo);  
+        });  
+          
+        // Gentle melodic notes  
+        let melStep = 0;  
+        const melody = [0, 2, 3, 5, 3, 2, 0, -1, 0, 2, 5, 7, 5, 3, 2, 0];  
+        const melInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            const deg = melody[melStep % melody.length];  
+            const freq = getFreqFromScale(def, deg + 7); // higher octave  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'sine';  
+            osc.frequency.value = freq;  
+            const g = audioCtx.createGain();  
+            const t = audioCtx.currentTime;  
+            g.gain.setValueAtTime(0, t);  
+            g.gain.linearRampToValueAtTime(0.1, t + 0.2);  
+            g.gain.linearRampToValueAtTime(0, t + 1.5);  
+            osc.connect(g);  
+            g.connect(output);  
+            osc.start(t);  
+            osc.stop(t + 1.5);  
+            melStep++;  
+        }, 800);  
+        nodes.intervals.push(melInt);  
+    }
 
-async function init(){  
-    await Promise.all(Object.entries(TEX).map(([k,u])=>loadT(k,u)));
+    function createEarthMusic(def, output, nodes) {  
+        // Beautiful melodic piece with nature-inspired sounds  
+        // Warm pad  
+        [0, 4, 7, 11].forEach((semitone, i) => {  
+            const freq = def.baseFreq * Math.pow(2, semitone / 12);  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'sine';  
+            osc.frequency.value = freq;  
+            const g = audioCtx.createGain();  
+            g.gain.value = 0.05;  
+            const lfo = audioCtx.createOscillator();  
+            lfo.frequency.value = 0.1 + i * 0.03;  
+            const lfoG = audioCtx.createGain();  
+            lfoG.gain.value = 0.02;  
+            lfo.connect(lfoG);  
+            lfoG.connect(g.gain);  
+            osc.connect(g);  
+            g.connect(output);  
+            osc.start();  
+            lfo.start();  
+            nodes.oscs.push(osc, lfo);  
+        });  
+          
+        // Main melody - "Blue Marble" theme  
+        const melody = [0, 4, 7, 4, 2, 4, 0, -1, 0, 2, 4, 7, 9, 7, 4, 2];  
+        let step = 0;  
+        const melInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            const deg = melody[step % melody.length];  
+            const freq = getFreqFromScale(def, deg + 7);  
+              
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'triangle';  
+            osc.frequency.value = freq;  
+            const g = audioCtx.createGain();  
+            const t = audioCtx.currentTime;  
+            g.gain.setValueAtTime(0, t);  
+            g.gain.linearRampToValueAtTime(0.12, t + 0.1);  
+            g.gain.exponentialRampToValueAtTime(0.01, t + 0.6);  
+              
+            const filter = audioCtx.createBiquadFilter();  
+            filter.type = 'lowpass';  
+            filter.frequency.value = 2000;  
+              
+            osc.connect(filter);  
+            filter.connect(g);  
+            g.connect(output);  
+            osc.start(t);  
+            osc.stop(t + 0.7);  
+            step++;  
+        }, 500);  
+        nodes.intervals.push(melInt);  
+          
+        // Soft "rain" texture  
+        const rainInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            for (let i = 0; i < 3; i++) {  
+                setTimeout(() => {  
+                    if (!planetMusicEnabled) return;  
+                    const osc = audioCtx.createOscillator();  
+                    osc.type = 'sine';  
+                    osc.frequency.value = 2000 + Math.random() * 4000;  
+                    const g = audioCtx.createGain();  
+                    const t = audioCtx.currentTime;  
+                    g.gain.setValueAtTime(0.01, t);  
+                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.05);  
+                    osc.connect(g);  
+                    g.connect(output);  
+                    osc.start(t);  
+                    osc.stop(t + 0.05);  
+                }, Math.random() * 200);  
+            }  
+        }, 300);  
+        nodes.intervals.push(rainInt);  
+    }
 
-    DATA.forEach((d,i)=>{  
-        const isSun=d.name==='Sun';  
-        let tex=loaded[d.tex]||makeFallback(FB[d.tex]||['#888']);  
-        const geo=new THREE.SphereGeometry(d.r,64,48);  
-        const mat=isSun?new THREE.MeshBasicMaterial({map:tex}):  
-            new THREE.MeshStandardMaterial({map:tex,roughness:.65,metalness:.05,emissive:new THREE.Color(d.g[1]),emissiveIntensity:.06});  
-        const mesh=new THREE.Mesh(geo,mat);  
-        mesh.userData={idx:i,data:d,angle:Math.random()*6.28,origEI:.06};  
-        scene.add(mesh);meshes.push(mesh);
+    function createMarsMusic(def, output, nodes) {  
+        // Dark, martial, phrygian mode - mysterious and powerful  
+        // Deep war drums  
+        const drumInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'sine';  
+            const t = audioCtx.currentTime;  
+            osc.frequency.setValueAtTime(80, t);  
+            osc.frequency.exponentialRampToValueAtTime(40, t + 0.3);  
+            const g = audioCtx.createGain();  
+            g.gain.setValueAtTime(0.3, t);  
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);  
+            osc.connect(g);  
+            g.connect(output);  
+            osc.start(t);  
+            osc.stop(t + 0.5);  
+        }, 1500);  
+        nodes.intervals.push(drumInt);  
+          
+        // Phrygian drone  
+        [0, 1, 5].forEach((idx, i) => {  
+            const freq = def.baseFreq * Math.pow(2, def.scale[idx % def.scale.length] / 12);  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'sawtooth';  
+            osc.frequency.value = freq;  
+            const filter = audioCtx.createBiquadFilter();  
+            filter.type = 'lowpass';  
+            filter.frequency.value = 400;  
+            filter.Q.value = 2;  
+            const g = audioCtx.createGain();  
+            g.gain.value = 0.04;  
+            osc.connect(filter);  
+            filter.connect(g);  
+            g.connect(output);  
+            osc.start();  
+            nodes.oscs.push(osc);  
+              
+            // Filter sweep  
+            const lfo = audioCtx.createOscillator();  
+            lfo.frequency.value = 0.08;  
+            const lfoG = audioCtx.createGain();  
+            lfoG.gain.value = 200;  
+            lfo.connect(lfoG);  
+            lfoG.connect(filter.frequency);  
+            lfo.start();  
+            nodes.oscs.push(lfo);  
+        });  
+          
+        // Staccato melody  
+        const melody = [0, 0, 1, 0, 4, 3, 1, 0];  
+        let step = 0;  
+        const melInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            const freq = getFreqFromScale(def, melody[step % melody.length] + 7);  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'square';  
+            osc.frequency.value = freq;  
+            const filter = audioCtx.createBiquadFilter();  
+            filter.type = 'lowpass';  
+            filter.frequency.value = 1500;  
+            const g = audioCtx.createGain();  
+            const t = audioCtx.currentTime;  
+            g.gain.setValueAtTime(0.06, t);  
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);  
+            osc.connect(filter);  
+            filter.connect(g);  
+            g.connect(output);  
+            osc.start(t);  
+            osc.stop(t + 0.25);  
+            step++;  
+        }, 375);  
+        nodes.intervals.push(melInt);  
+    }
 
-        if(isSun){  
-            [1.3,2.2].forEach((s,gi)=>{  
-                const gm=new THREE.Mesh(new THREE.SphereGeometry(d.r*s,32,32),new THREE.ShaderMaterial({  
-                    uniforms:{time:{value:0}},  
-                    vertexShader:`varying vec3 vN,vP;void main(){vN=normalize(normalMatrix*normal);vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,  
-                    fragmentShader:gi===0?  
-                        `uniform float time;varying vec3 vN,vP;void main(){float i=pow(.65-dot(vN,vec3(0,0,1)),2.5);float f=.8+.2*sin(time*2.+vP.x*3.);vec3 c=mix(vec3(1,.7,.1),vec3(1,.3,0),i)*f;gl_FragColor=vec4(c,i*.6);}`:  
-                        `uniform float time;varying vec3 vN;void main(){float i=pow(.5-dot(vN,vec3(0,0,1)),3.);float f=.7+.3*sin(time*1.5);gl_FragColor=vec4(1.,.5,.1,i*.18*f);}`,  
-                    transparent:true,side:THREE.BackSide,blending:THREE.AdditiveBlending,depthWrite:false}));  
-                mesh.add(gm);if(gi===0)mesh.userData.glow1=gm;else mesh.userData.glow2=gm;  
+    function createJupiterMusic(def, output, nodes) {  
+        // Grand, majestic - Holst inspired  
+        // Big chord pad  
+        const chords = [  
+            [0, 2, 4], // I  
+            [2, 4, 6], // iii  
+            [4, 6, 8], // V  
+            [3, 5, 7], // IV  
+        ];  
+        let chordIdx = 0;  
+          
+        const chordInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            const chord = chords[chordIdx % chords.length];  
+            chord.forEach(deg => {  
+                const freq = getFreqFromScale(def, deg);  
+                const osc = audioCtx.createOscillator();  
+                osc.type = 'sine';  
+                osc.frequency.value = freq;  
+                const osc2 = audioCtx.createOscillator();  
+                osc2.type = 'triangle';  
+                osc2.frequency.value = freq * 2;  
+                const g = audioCtx.createGain();  
+                const t = audioCtx.currentTime;  
+                g.gain.setValueAtTime(0, t);  
+                g.gain.linearRampToValueAtTime(0.08, t + 0.5);  
+                g.gain.linearRampToValueAtTime(0.04, t + 2.5);  
+                g.gain.linearRampToValueAtTime(0, t + 3.5);  
+                osc.connect(g);  
+                osc2.connect(g);  
+                g.connect(output);  
+                osc.start(t);  
+                osc2.start(t);  
+                osc.stop(t + 3.6);  
+                osc2.stop(t + 3.6);  
             });  
+            chordIdx++;  
+        }, 4000);  
+        nodes.intervals.push(chordInt);  
+          
+        // Majestic horn-like melody  
+        const melody = [0, 2, 4, 2, 4, 6, 4, 2, 0, -1, 0, 4, 2, 0, -1, -3];  
+        let step = 0;  
+        const melInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            const freq = getFreqFromScale(def, melody[step % melody.length] + 5);  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'sawtooth';  
+            osc.frequency.value = freq;  
+            const filter = audioCtx.createBiquadFilter();  
+            filter.type = 'lowpass';  
+            filter.frequency.value = 800;  
+            const g = audioCtx.createGain();  
+            const t = audioCtx.currentTime;  
+            g.gain.setValueAtTime(0, t);  
+            g.gain.linearRampToValueAtTime(0.05, t + 0.15);  
+            g.gain.linearRampToValueAtTime(0.03, t + 0.8);  
+            g.gain.linearRampToValueAtTime(0, t + 1.2);  
+            osc.connect(filter);  
+            filter.connect(g);  
+            g.connect(output);  
+            osc.start(t);  
+            osc.stop(t + 1.3);  
+            step++;  
+        }, 1000);  
+        nodes.intervals.push(melInt);  
+    }
+
+    function createSaturnMusic(def, output, nodes) {  
+        // Ethereal, mysterious rings-inspired  
+        // Ring shimmer - rotating arpeggios  
+        const ringNotes = [0, 2, 3, 5, 7, 9, 10, 9, 7, 5, 3, 2];  
+        let step = 0;  
+        const ringInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            const freq = getFreqFromScale(def, ringNotes[step % ringNotes.length] + 7);  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'sine';  
+            osc.frequency.value = freq;  
+            const g = audioCtx.createGain();  
+            const t = audioCtx.currentTime;  
+            const pan = audioCtx.createStereoPanner();  
+            pan.pan.value = Math.sin(step * 0.5) * 0.8;  
+            g.gain.setValueAtTime(0, t);  
+            g.gain.linearRampToValueAtTime(0.08, t + 0.1);  
+            g.gain.exponentialRampToValueAtTime(0.001, t + 1.5);  
+            osc.connect(g);  
+            g.connect(pan);  
+            pan.connect(output);  
+            osc.start(t);  
+            osc.stop(t + 1.5);  
+            step++;  
+        }, 350);  
+        nodes.intervals.push(ringInt);  
+          
+        // Deep drone  
+        const drone = audioCtx.createOscillator();  
+        drone.type = 'sine';  
+        drone.frequency.value = def.baseFreq / 2;  
+        const droneG = audioCtx.createGain();  
+        droneG.gain.value = 0.08;  
+        const droneLfo = audioCtx.createOscillator();  
+        droneLfo.frequency.value = 0.05;  
+        const droneLfoG = audioCtx.createGain();  
+        droneLfoG.gain.value = 0.03;  
+        droneLfo.connect(droneLfoG);  
+        droneLfoG.connect(droneG.gain);  
+        drone.connect(droneG);  
+        droneG.connect(output);  
+        drone.start();  
+        droneLfo.start();  
+        nodes.oscs.push(drone, droneLfo);  
+          
+        // Ethereal whisper  
+        const whisperInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            const freq = getFreqFromScale(def, Math.floor(Math.random() * 12) + 14);  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'sine';  
+            osc.frequency.value = freq;  
+            const g = audioCtx.createGain();  
+            const t = audioCtx.currentTime;  
+            g.gain.setValueAtTime(0, t);  
+            g.gain.linearRampToValueAtTime(0.03, t + 1);  
+            g.gain.linearRampToValueAtTime(0, t + 3);  
+            osc.connect(g);  
+            g.connect(output);  
+            osc.start(t);  
+            osc.stop(t + 3.1);  
+        }, 2500);  
+        nodes.intervals.push(whisperInt);  
+    }
+
+    function createUranusMusic(def, output, nodes) {  
+        // Glitchy, icy, unusual - tilted planet, weird music  
+        // Glitch bass  
+        const glitchInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            const freq = def.baseFreq * (Math.random() < 0.5 ? 0.5 : 1);  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'square';  
+            osc.frequency.value = freq;  
+            const filter = audioCtx.createBiquadFilter();  
+            filter.type = 'bandpass';  
+            filter.frequency.value = 200 + Math.random() * 800;  
+            filter.Q.value = 5;  
+            const g = audioCtx.createGain();  
+            const t = audioCtx.currentTime;  
+            const dur = 0.05 + Math.random() * 0.15;  
+            g.gain.setValueAtTime(0.1, t);  
+            g.gain.exponentialRampToValueAtTime(0.001, t + dur);  
+            osc.connect(filter);  
+            filter.connect(g);  
+            g.connect(output);  
+            osc.start(t);  
+            osc.stop(t + dur);  
+        }, 200);  
+        nodes.intervals.push(glitchInt);  
+          
+        // Icy pad  
+        [0, 3, 6, 8].forEach((idx, i) => {  
+            const semitone = def.scale[idx % def.scale.length];  
+            const freq = def.baseFreq * Math.pow(2, semitone / 12);  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'sine';  
+            osc.frequency.value = freq;  
+            const g = audioCtx.createGain();  
+            g.gain.value = 0.04;  
+            const lfo = audioCtx.createOscillator();  
+            lfo.frequency.value = 2 + i * 1.5;  
+            const lfoG = audioCtx.createGain();  
+            lfoG.gain.value = freq * 0.01;  
+            lfo.connect(lfoG);  
+            lfoG.connect(osc.frequency);  
+            osc.connect(g);  
+            g.connect(output);  
+            osc.start();  
+            lfo.start();  
+            nodes.oscs.push(osc, lfo);  
+        });  
+          
+        // Random ice crystal pings  
+        const pingInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            if (Math.random() > 0.5) return;  
+            const freq = 2000 + Math.random() * 6000;  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'sine';  
+            osc.frequency.value = freq;  
+            const g = audioCtx.createGain();  
+            const t = audioCtx.currentTime;  
+            g.gain.setValueAtTime(0.04, t);  
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);  
+            osc.connect(g);  
+            g.connect(output);  
+            osc.start(t);  
+            osc.stop(t + 0.3);  
+        }, 600);  
+        nodes.intervals.push(pingInt);  
+    }
+
+    function createNeptuneMusic(def, output, nodes) {  
+        // Deep oceanic sounds, mysterious, slow waves  
+        // Deep ocean waves  
+        const waveOsc = audioCtx.createOscillator();  
+        waveOsc.type = 'sine';  
+        waveOsc.frequency.value = def.baseFreq / 4;  
+        const waveGain = audioCtx.createGain();  
+        waveGain.gain.value = 0.1;  
+        const waveLfo = audioCtx.createOscillator();  
+        waveLfo.frequency.value = 0.08;  
+        const waveLfoG = audioCtx.createGain();  
+        waveLfoG.gain.value = 0.05;  
+        waveLfo.connect(waveLfoG);  
+        waveLfoG.connect(waveGain.gain);  
+        waveOsc.connect(waveGain);  
+        waveGain.connect(output);  
+        waveOsc.start();  
+        waveLfo.start();  
+        nodes.oscs.push(waveOsc, waveLfo);  
+          
+        // Mysterious chord swells  
+        const chordInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            const root = Math.floor(Math.random() * 4);  
+            [0, 2, 4, 6].forEach(off => {  
+                const freq = getFreqFromScale(def, root + off + 3);  
+                const osc = audioCtx.createOscillator();  
+                osc.type = 'sine';  
+                osc.frequency.value = freq;  
+                const g = audioCtx.createGain();  
+                const t = audioCtx.currentTime;  
+                g.gain.setValueAtTime(0, t);  
+                g.gain.linearRampToValueAtTime(0.04, t + 2);  
+                g.gain.linearRampToValueAtTime(0, t + 5);  
+                osc.connect(g);  
+                g.connect(output);  
+                osc.start(t);  
+                osc.stop(t + 5.1);  
+            });  
+        }, 5000);  
+        nodes.intervals.push(chordInt);  
+          
+        // Whale-like sounds  
+        const whaleInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'sine';  
+            const startFreq = 200 + Math.random() * 300;  
+            const t = audioCtx.currentTime;  
+            osc.frequency.setValueAtTime(startFreq, t);  
+            osc.frequency.linearRampToValueAtTime(startFreq * 1.5, t + 1);  
+            osc.frequency.linearRampToValueAtTime(startFreq * 0.8, t + 2.5);  
+            const g = audioCtx.createGain();  
+            g.gain.setValueAtTime(0, t);  
+            g.gain.linearRampToValueAtTime(0.06, t + 0.5);  
+            g.gain.linearRampToValueAtTime(0, t + 3);  
+            osc.connect(g);  
+            g.connect(output);  
+            osc.start(t);  
+            osc.stop(t + 3.1);  
+        }, 4000);  
+        nodes.intervals.push(whaleInt);  
+          
+        // Bubbling  
+        const bubbleInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            for (let i = 0; i < 2; i++) {  
+                setTimeout(() => {  
+                    const osc = audioCtx.createOscillator();  
+                    osc.type = 'sine';  
+                    const t = audioCtx.currentTime;  
+                    osc.frequency.setValueAtTime(500 + Math.random() * 1000, t);  
+                    osc.frequency.exponentialRampToValueAtTime(3000, t + 0.1);  
+                    const g = audioCtx.createGain();  
+                    g.gain.setValueAtTime(0.02, t);  
+                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);  
+                    osc.connect(g);  
+                    g.connect(output);  
+                    osc.start(t);  
+                    osc.stop(t + 0.1);  
+                }, Math.random() * 500);  
+            }  
+        }, 1200);  
+        nodes.intervals.push(bubbleInt);  
+    }
+
+    function createPlutoMusic(def, output, nodes) {  
+        // Lonely, frozen, sparse - the exile at the edge  
+        // Very sparse, lonely piano-like notes  
+        const melody = [0, -2, 0, 1, 0, -2, -4, -2, 0, 3, 1, 0];  
+        let step = 0;  
+        const noteInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            if (Math.random() < 0.3) { step++; return; } // occasional silence  
+              
+            const freq = getFreqFromScale(def, melody[step % melody.length] + 7);  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'triangle';  
+            osc.frequency.value = freq;  
+            const osc2 = audioCtx.createOscillator();  
+            osc2.type = 'sine';  
+            osc2.frequency.value = freq * 3; // bell-like harmonic  
+            const g = audioCtx.createGain();  
+            const g2 = audioCtx.createGain();  
+            const t = audioCtx.currentTime;  
+            g.gain.setValueAtTime(0.1, t);  
+            g.gain.exponentialRampToValueAtTime(0.01, t + 2);  
+            g2.gain.setValueAtTime(0.03, t);  
+            g2.gain.exponentialRampToValueAtTime(0.001, t + 0.5);  
+            osc.connect(g);  
+            osc2.connect(g2);  
+            g.connect(output);  
+            g2.connect(output);  
+            osc.start(t);  
+            osc2.start(t);  
+            osc.stop(t + 2.5);  
+            osc2.stop(t + 0.6);  
+            step++;  
+        }, 2000);  
+        nodes.intervals.push(noteInt);  
+          
+        // Cold wind  
+        const noiseSize = audioCtx.sampleRate * 2;  
+        const noiseBuf = audioCtx.createBuffer(1, noiseSize, audioCtx.sampleRate);  
+        const noiseData = noiseBuf.getChannelData(0);  
+        for (let i = 0; i < noiseSize; i++) noiseData[i] = Math.random() * 2 - 1;  
+        const noise = audioCtx.createBufferSource();  
+        noise.buffer = noiseBuf;  
+        noise.loop = true;  
+        const noiseFilter = audioCtx.createBiquadFilter();  
+        noiseFilter.type = 'bandpass';  
+        noiseFilter.frequency.value = 800;  
+        noiseFilter.Q.value = 2;  
+        const noiseG = audioCtx.createGain();  
+        noiseG.gain.value = 0.02;  
+        const noiseLfo = audioCtx.createOscillator();  
+        noiseLfo.frequency.value = 0.1;  
+        const noiseLfoG = audioCtx.createGain();  
+        noiseLfoG.gain.value = 0.015;  
+        noiseLfo.connect(noiseLfoG);  
+        noiseLfoG.connect(noiseG.gain);  
+        noise.connect(noiseFilter);  
+        noiseFilter.connect(noiseG);  
+        noiseG.connect(output);  
+        noise.start();  
+        noiseLfo.start();  
+        nodes.oscs.push(noise, noiseLfo);  
+          
+        // Very deep, lonely drone  
+        const drone = audioCtx.createOscillator();  
+        drone.type = 'sine';  
+        drone.frequency.value = def.baseFreq / 4;  
+        const droneG = audioCtx.createGain();  
+        droneG.gain.value = 0.05;  
+        drone.connect(droneG);  
+        droneG.connect(output);  
+        drone.start();  
+        nodes.oscs.push(drone);  
+          
+        // Occasional ice crack  
+        const crackInt = setInterval(() => {  
+            if (!planetMusicEnabled) return;  
+            if (Math.random() > 0.4) return;  
+            const osc = audioCtx.createOscillator();  
+            osc.type = 'sawtooth';  
+            const t = audioCtx.currentTime;  
+            osc.frequency.setValueAtTime(4000 + Math.random() * 3000, t);  
+            osc.frequency.exponentialRampToValueAtTime(100, t + 0.08);  
+            const g = audioCtx.createGain();  
+            g.gain.setValueAtTime(0.04, t);  
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);  
+            const filter = audioCtx.createBiquadFilter();  
+            filter.type = 'highpass';  
+            filter.frequency.value = 1000;  
+            osc.connect(filter);  
+            filter.connect(g);  
+            g.connect(output);  
+            osc.start(t);  
+            osc.stop(t + 0.1);  
+        }, 3000);  
+        nodes.intervals.push(crackInt);  
+    }
+
+    function stopPlanetMusic() {  
+        planetMusicEnabled = false;  
+        currentPlanetMusic = null;  
+        if (planetMusicNodes.mainGain) {  
+            try {  
+                planetMusicNodes.mainGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1);  
+                planetMusicNodes.intervals?.forEach(i => clearInterval(i));  
+                setTimeout(() => {  
+                    try {  
+                        planetMusicNodes.oscs?.forEach(o => { try { o.stop(); } catch(e){} });  
+                    } catch(e) {}  
+                }, 1100);  
+            } catch(e) {}  
         }  
-        if(d.name==='Earth'){  
-            if(loaded.earthClouds){const cl=new THREE.Mesh(new THREE.SphereGeometry(d.r*1.01,48,36),  
-                new THREE.MeshStandardMaterial({map:loaded.earthClouds,transparent:true,opacity:.35,depthWrite:false}));  
-                mesh.add(cl);mesh.userData.clouds=cl;}  
-            mesh.add(new THREE.Mesh(new THREE.SphereGeometry(d.r*1.04,48,36),new THREE.ShaderMaterial({  
-                vertexShader:`varying vec3 vN;void main(){vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,  
-                fragmentShader:`varying vec3 vN;void main(){float i=pow(.7-dot(vN,vec3(0,0,1)),2.5);gl_FragColor=vec4(.3,.6,1.,i*.45);}`,  
-                transparent:true,side:THREE.BackSide,blending:THREE.AdditiveBlending,depthWrite:false})));  
+        planetMusicNodes = [];  
+        document.getElementById('music-toggle').textContent = '🎶 Planet Music';  
+    }
+
+    function showNowPlaying(text) {  
+        const np = document.getElementById('now-playing');  
+        document.getElementById('track-name').textContent = text;  
+        np.style.display = 'block';  
+        np.style.opacity = '1';  
+    }
+
+    document.getElementById('ambient-toggle').addEventListener('click', () => {  
+        if (!audioCtx) initAudio();  
+        if (ambientEnabled) {  
+            stopAmbient();  
+            if (!planetMusicEnabled) document.getElementById('now-playing').style.display = 'none';  
+        } else {  
+            startAmbient();  
         }  
-        if(d.hasRings){  
-            const ir=d.r*1.25,or=d.r*(d.thinR?1.8:2.5),rG=new THREE.RingGeometry(ir,or,128);  
-            const pos=rG.attributes.position,uv=rG.attributes.uv;  
-            for(let j=0;j<pos.count;j++){const x=pos.getX(j),y=pos.getY(j);uv.setXY(j,(Math.sqrt(x*x+y*y)-ir)/(or-ir),.5);}  
-            let rMat;  
-            if(loaded.saturnRing&&!d.thinR){rMat=new THREE.MeshStandardMaterial({map:loaded.saturnRing,side:THREE.DoubleSide,transparent:true,opacity:.82,roughness:.75});}  
-            else{const rc=document.createElement('canvas');rc.width=1024;rc.height=32;const rx=rc.getContext('2d');  
-                for(let x=0;x<1024;x++){const t=x/1024,cass=Math.abs(t-.55)<.02?.1:1,gap=(Math.sin(t*80)*.5+.5)*(Math.sin(t*30)*.3+.7),a=(1-Math.pow(Math.abs(t-.5)*2,2))*.7*gap*cass;  
-                    rx.fillStyle=d.thinR?`rgba(180,210,220,${a*.5})`:`rgba(${190+t*40},${170+t*40},${140+t*30},${a})`;rx.fillRect(x,0,1,32);}  
-                rMat=new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(rc),side:THREE.DoubleSide,transparent:true,opacity:.82,roughness:.8});}  
-            const ring=new THREE.Mesh(rG,rMat);ring.rotation.x=-Math.PI/2+(d.thinR?.15:.08);mesh.add(ring);  
-        }  
-        if(d.orbit>0){const pts=[];for(let j=0;j<=256;j++){const a=(j/256)*6.28;pts.push(new THREE.Vector3(Math.cos(a)*d.orbit,0,Math.sin(a)*d.orbit));}  
-            const oL=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.05}));scene.add(oL);orbLines.push(oL);}  
-        if(d.name==='Earth'){const mm=new THREE.Mesh(new THREE.SphereGeometry(.25,32,24),new THREE.MeshStandardMaterial({color:0xcccccc,roughness:.85}));scene.add(mm);mesh.userData.moon=mm;}  
-        if(d.name==='Jupiter'){mesh.userData.jMoons=[0xffee55,0xaabbdd,0xddccaa,0x998877].map(c=>{const mm=new THREE.Mesh(new THREE.SphereGeometry(.18,16,12),new THREE.MeshStandardMaterial({color:c,roughness:.7}));scene.add(mm);return mm;});}  
     });
 
-    // Asteroids  
-    const aN=800,aG=new THREE.BufferGeometry(),aP=new Float32Array(aN*3);  
-    for(let i=0;i<aN;i++){const a=(i/aN)*6.28,r=28+(Math.random()-.5)*4;aP[i*3]=Math.cos(a)*r+(Math.random()-.5)*2;aP[i*3+1]=(Math.random()-.5)*.6;aP[i*3+2]=Math.sin(a)*r+(Math.random()-.5)*2;}  
-    aG.setAttribute('position',new THREE.BufferAttribute(aP,3));  
-    scene.add(new THREE.Points(aG,new THREE.PointsMaterial({color:0x887766,size:.06,transparent:true,opacity:.5,sizeAttenuation:true})));
+    document.getElementById('music-toggle').addEventListener('click', () => {  
+        if (!audioCtx) initAudio();  
+        if (planetMusicEnabled) {  
+            stopPlanetMusic();  
+            if (!ambientEnabled) document.getElementById('now-playing').style.display = 'none';  
+        } else if (focusedPlanet) {  
+            startPlanetMusic(focusedPlanet.name);  
+        } else {  
+            // Play sun music by default  
+            startPlanetMusic('Sun');  
+        }  
+    });
 
-    // Labels  
-    const lC=document.createElement('div');lC.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50';  
-    document.body.appendChild(lC);DATA.forEach(d=>{const l=document.createElement('div');  
-        l.style.cssText=`position:absolute;font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.6);text-shadow:0 0 6px #000;transform:translate(-50%,-100%);white-space:nowrap;opacity:0;transition:opacity .3s`;  
-        l.textContent=d.name.toUpperCase();lC.appendChild(l);lbls.push(l);});
+    // ============ 3D MATH ============  
+    function mat4Multiply(a, b) {  
+        const r = new Float32Array(16);  
+        for (let i = 0; i < 4; i++)  
+            for (let j = 0; j < 4; j++)  
+                for (let k = 0; k < 4; k++)  
+                    r[i*4+j] += a[i*4+k] * b[k*4+j];  
+        return r;  
+    }
 
-    // Nova  
-    const nM=new THREE.ShaderMaterial({uniforms:{time:{value:0},progress:{value:0}},vertexShader:`varying vec3 vN;uniform float progress;void main(){vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position*(1.+progress*120.),1.);}`,fragmentShader:`uniform float time,progress;varying vec3 vN;void main(){float i=pow(.7-dot(vN,vec3(0,0,1)),1.5);float a=(1.-progress)*i;vec3 c=mix(vec3(1),mix(vec3(.4,.7,1),vec3(.5,.1,.8),progress),progress);gl_FragColor=vec4(c,a*.5);}`,transparent:true,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false});  
-    const nMesh=new THREE.Mesh(new THREE.SphereGeometry(1,32,32),nM);nMesh.visible=false;scene.add(nMesh);  
-    window._nM=nM;window._nMesh=nMesh;
+    function mat4RotateX(a) {  
+        const c = Math.cos(a), s = Math.sin(a);  
+        return new Float32Array([1,0,0,0, 0,c,s,0, 0,-s,c,0, 0,0,0,1]);  
+    }
 
-    setTimeout(()=>document.getElementById('ld').classList.add('go'),600);  
+    function mat4RotateY(a) {  
+        const c = Math.cos(a), s = Math.sin(a);  
+        return new Float32Array([c,0,-s,0, 0,1,0,0, s,0,c,0, 0,0,0,1]);  
+    }
+
+    function transformPoint(m, p) {  
+        return [  
+            m[0]*p[0]+m[1]*p[1]+m[2]*p[2]+m[3],  
+            m[4]*p[0]+m[5]*p[1]+m[6]*p[2]+m[7],  
+            m[8]*p[0]+m[9]*p[1]+m[10]*p[2]+m[11]  
+        ];  
+    }
+
+    function project(p) {  
+        const fov = 600;  
+        const z = p[2] + camera.dist;  
+        if (z <= 0.1) return null;  
+        return [W/2 + p[0]*fov/z, H/2 + p[1]*fov/z, z];  
+    }
+
+    // ============ CAMERA ============  
+    const camera = {  
+        rotX: -0.4,  
+        rotY: 0,  
+        dist: 500,  
+        targetDist: 500,  
+        targetRotX: -0.4,  
+        targetRotY: 0,  
+        focusX: 0, focusY: 0, focusZ: 0,  
+        targetFocusX: 0, targetFocusY: 0, targetFocusZ: 0  
+    };
+
+    let isDragging = false;  
+    let lastMouse = { x: 0, y: 0 };  
+    let focusedPlanet = null;
+
+    canvas.addEventListener('mousedown', e => {  
+        isDragging = true;  
+        lastMouse = { x: e.clientX, y: e.clientY };  
+    });
+
+    canvas.addEventListener('mousemove', e => {  
+        if (isDragging) {  
+            const dx = e.clientX - lastMouse.x;  
+            const dy = e.clientY - lastMouse.y;  
+            camera.targetRotY += dx * 0.005;  
+            camera.targetRotX = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, camera.targetRotX + dy * 0.005));  
+            lastMouse = { x: e.clientX, y: e.clientY };  
+        }  
+    });
+
+    canvas.addEventListener('mouseup', () => isDragging = false);  
+    canvas.addEventListener('mouseleave', () => isDragging = false);
+
+    canvas.addEventListener('wheel', e => {  
+        camera.targetDist *= e.deltaY > 0 ? 1.1 : 0.9;  
+        camera.targetDist = Math.max(20, Math.min(3000, camera.targetDist));  
+    });
+
+    canvas.addEventListener('click', e => {  
+        if (Math.abs(e.clientX - lastMouse.x) > 5 || Math.abs(e.clientY - lastMouse.y) > 5) return;  
+          
+        const viewMat = mat4Multiply(mat4RotateX(camera.rotX), mat4RotateY(camera.rotY));  
+        let closest = null;  
+        let closestDist = Infinity;  
+          
+        planets.forEach(p => {  
+            const pos = [p.worldX - camera.focusX, p.worldY - camera.focusY, p.worldZ - camera.focusZ];  
+            const tp = transformPoint(viewMat, pos);  
+            const sp = project(tp);  
+            if (!sp) return;  
+            const dx = e.clientX - sp[0];  
+            const dy = e.clientY - sp[1];  
+            const d = Math.sqrt(dx*dx + dy*dy);  
+            const screenRadius = Math.max(8, p.radius * 600 / sp[2]);  
+            if (d < screenRadius + 15 && d < closestDist) {  
+                closest = p;  
+                closestDist = d;  
+            }  
+        });  
+          
+        if (closest) {  
+            focusedPlanet = closest;  
+            camera.targetDist = closest.radius * 8 + 20;  
+              
+            // Auto-start planet music on click  
+            if (audioCtx || true) {  
+                initAudio();  
+                startPlanetMusic(closest.name);  
+            }  
+              
+            showPlanetInfo(closest);  
+        }  
+    });
+
+    document.addEventListener('keydown', e => {  
+        if (e.key === 'Escape') {  
+            focusedPlanet = null;  
+            camera.targetDist = 500;  
+            camera.targetFocusX = 0;  
+            camera.targetFocusY = 0;  
+            camera.targetFocusZ = 0;  
+            document.getElementById('planet-info').style.display = 'none';  
+              
+            if (planetMusicEnabled) {  
+                stopPlanetMusic();  
+                if (ambientEnabled) showNowPlaying('Deep Space Ambient');  
+                else document.getElementById('now-playing').style.display = 'none';  
+            }  
+        }  
+    });
+
+    function showPlanetInfo(p) {  
+        document.getElementById('info-name').textContent = p.name;  
+        document.getElementById('info-desc').textContent = p.description;  
+        document.getElementById('info-stats').innerHTML =   
+            `<span>Diameter: ${p.realDiameter}</span>  
+             <span>Distance: ${p.realDistance}</span>  
+             <span>Orbit Period: ${p.orbitPeriod}</span>  
+             <span>Day Length: ${p.dayLength}</span>  
+             <span>Temperature: ${p.temperature}</span>  
+             <span>Moons: ${p.moons}</span>`;  
+        document.getElementById('planet-info').style.display = 'block';  
+    }
+
+    // ============ STARS ============  
+    const stars = [];  
+    for (let i = 0; i < 2000; i++) {  
+        const theta = Math.random() * Math.PI * 2;  
+        const phi = Math.acos(Math.random() * 2 - 1);  
+        const r = 1500 + Math.random() * 1500;  
+        stars.push({  
+            x: r * Math.sin(phi) * Math.cos(theta),  
+            y: r * Math.sin(phi) * Math.sin(theta),  
+            z: r * Math.cos(phi),  
+            brightness: 0.3 + Math.random() * 0.7,  
+            size: 0.5 + Math.random() * 1.5,  
+            twinkleSpeed: 1 + Math.random() * 3,  
+            color: ['#ffffff', '#ffeedd', '#ddeeff', '#ffdddd', '#ddeeff'][Math.floor(Math.random() * 5)]  
+        });  
+    }
+
+    // ============ TEXTURE GENERATION ============  
+    function createTexture(size, generator) {  
+        const c = document.createElement('canvas');  
+        c.width = size;  
+        c.height = size;  
+        const ctx = c.getContext('2d');  
+        generator(ctx, size);  
+        return c;  
+    }
+
+    function noise2D(x, y, seed) {  
+        const n = Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453;  
+        return n - Math.floor(n);  
+    }
+
+    function fbm(x, y, seed, octaves = 5) {  
+        let v = 0, a = 0.5, f = 1;  
+        for (let i = 0; i < octaves; i++) {  
+            v += a * noise2D(x * f, y * f, seed + i * 100);  
+            a *= 0.5;  
+            f *= 2;  
+        }  
+        return v;  
+    }
+
+    const textures = {};
+
+    textures.sun = createTexture(512, (ctx, s) => {  
+        const img = ctx.createImageData(s, s);  
+        for (let y = 0; y < s; y++) {  
+            for (let x = 0; x < s; x++) {  
+                const u = x / s, v = y / s;  
+                const n = fbm(u * 6, v * 6, 1, 6);  
+                const n2 = fbm(u * 12, v * 12, 2, 4);  
+                const i = (y * s + x) * 4;  
+                img.data[i] = Math.min(255, 200 + n * 55);  
+                img.data[i+1] = Math.min(255, 100 + n * 80 + n2 * 40);  
+                img.data[i+2] = n2 * 40;  
+                img.data[i+3] = 255;  
+            }  
+        }  
+        ctx.putImageData(img, 0, 0);  
+    });
+
+    textures.mercury = createTexture(256, (ctx, s) => {  
+        const img = ctx.createImageData(s, s);  
+        for (let y = 0; y < s; y++) {  
+            for (let x = 0; x < s; x++) {  
+                const u = x/s, v = y/s;  
+                const n = fbm(u*8, v*8, 10, 5);  
+                const crater = fbm(u*15, v*15, 11, 3);  
+                const val = 80 + n * 80 + (crater > 0.65 ? -30 : 0);  
+                const i = (y*s+x)*4;  
+                img.data[i] = val;  
+                img.data[i+1] = val * 0.9;  
+                img.data[i+2] = val * 0.85;  
+                img.data[i+3] = 255;  
+            }  
+        }  
+        ctx.putImageData(img, 0, 0);  
+    });
+
+    textures.venus = createTexture(256, (ctx, s) => {  
+        const img = ctx.createImageData(s, s);  
+        for (let y = 0; y < s; y++) {  
+            for (let x = 0; x < s; x++) {  
+                const u = x/s, v = y/s;  
+                const n = fbm(u*5, v*5, 20, 6);  
+                const n2 = fbm(u*3+0.5, v*3, 21, 4);  
+                const i = (y*s+x)*4;  
+                img.data[i] = 180 + n * 60;  
+                img.data[i+1] = 140 + n * 50 + n2 * 20;  
+                img.data[i+2] = 80 + n2 * 30;  
+                img.data[i+3] = 255;  
+            }  
+        }  
+        ctx.putImageData(img, 0, 0);  
+    });
+
+    textures.earth = createTexture(512, (ctx, s) => {  
+        const img = ctx.createImageData(s, s);  
+        for (let y = 0; y < s; y++) {  
+            for (let x = 0; x < s; x++) {  
+                const u = x/s, v = y/s;  
+                const continent = fbm(u*4, v*4, 30, 6);  
+                const detail = fbm(u*10, v*10, 31, 4);  
+                const cloud = fbm(u*6+0.3, v*6, 32, 4);  
+                const isLand = continent > 0.45;  
+                const i = (y*s+x)*4;  
+                if (isLand) {  
+                    const green = continent > 0.6 ? 0.7 : 1;  
+                    img.data[i] = 40 + detail * 60;  
+                    img.data[i+1] = 100 * green + detail * 80;  
+                    img.data[i+2] = 30 + detail * 20;  
+                } else {  
+                    img.data[i] = 20 + detail * 20;  
+                    img.data[i+1] = 60 + detail * 40;  
+                    img.data[i+2] = 140 + detail * 60;  
+                }  
+                if (cloud > 0.6) {  
+                    const c = (cloud - 0.6) * 2.5;  
+                    img.data[i] = img.data[i] * (1-c) + 240 * c;  
+                    img.data[i+1] = img.data[i+1] * (1-c) + 240 * c;  
+                    img.data[i+2] = img.data[i+2] * (1-c) + 250 * c;  
+                }  
+                img.data[i+3] = 255;  
+            }  
+        }  
+        ctx.putImageData(img, 0, 0);  
+    });
+
+    textures.mars = createTexture(256, (ctx, s) => {  
+        const img = ctx.createImageData(s, s);  
+        for (let y = 0; y < s; y++) {  
+            for (let x = 0; x < s; x++) {  
+                const u = x/s, v = y/s;  
+                const n = fbm(u*6, v*6, 40, 5);  
+                const canyon = fbm(u*10, v*10, 41, 4);  
+                const polar = Math.abs(v - 0.5) > 0.4 ? 1 : 0;  
+                const i = (y*s+x)*4;  
+                img.data[i] = 160 + n * 60 + (polar ? 60 : 0);  
+                img.data[i+1] = 80 + n * 40 - (canyon > 0.6 ? 20 : 0) + (polar ? 50 : 0);  
+                img.data[i+2] = 40 + n * 20 + (polar ? 50 : 0);  
+                img.data[i+3] = 255;  
+            }  
+        }  
+        ctx.putImageData(img, 0, 0);  
+    });
+
+    textures.jupiter = createTexture(512, (ctx, s) => {  
+        const img = ctx.createImageData(s, s);  
+        for (let y = 0; y < s; y++) {  
+            for (let x = 0; x < s; x++) {  
+                const u = x/s, v = y/s;  
+                const band = Math.sin(v * 25) * 0.5 + 0.5;  
+                const turb = fbm(u*8+band*0.5, v*2, 50, 5);  
+                const storm = fbm(u*4, v*4, 51, 4);  
+                const spotDist = Math.sqrt((u-0.7)**2 + (v-0.6)**2);  
+                const spot = spotDist < 0.08 ? (0.08-spotDist)/0.08 : 0;  
+                const i = (y*s+x)*4;  
+                img.data[i] = 180 + band * 40 + turb * 30 + spot * 60;  
+                img.data[i+1] = 130 + band * 50 + turb * 30 - spot * 20;  
+                img.data[i+2] = 80 + turb * 40 - spot * 40;  
+                img.data[i+3] = 255;  
+            }  
+        }  
+        ctx.putImageData(img, 0, 0);  
+    });
+
+    textures.saturn = createTexture(512, (ctx, s) => {  
+        const img = ctx.createImageData(s, s);  
+        for (let y = 0; y < s; y++) {  
+            for (let x = 0; x < s; x++) {  
+                const u = x/s, v = y/s;  
+                const band = Math.sin(v * 20) * 0.5 + 0.5;  
+                const turb = fbm(u*6, v*3, 60, 5);  
+                const i = (y*s+x)*4;  
+                img.data[i] = 190 + band * 30 + turb * 20;  
+                img.data[i+1] = 170 + band * 25 + turb * 20;  
+                img.data[i+2] = 120 + turb * 30;  
+                img.data[i+3] = 255;  
+            }  
+        }  
+        ctx.putImageData(img, 0, 0);  
+    });
+
+    textures.uranus = createTexture(256, (ctx, s) => {  
+        const img = ctx.createImageData(s, s);  
+        for (let y = 0; y < s; y++) {  
+            for (let x = 0; x < s; x++) {  
+                const u = x/s, v = y/s;  
+                const n = fbm(u*4, v*4, 70, 4);  
+                const band = Math.sin(v * 12) * 0.1;  
+                const i = (y*s+x)*4;  
+                img.data[i] = 150 + n * 30 + band * 20;  
+                img.data[i+1] = 200 + n * 20 + band * 15;  
+                img.data[i+2] = 210 + n * 20;  
+                img.data[i+3] = 255;  
+            }  
+        }  
+        ctx.putImageData(img, 0, 0);  
+    });
+
+    textures.neptune = createTexture(256, (ctx, s) => {  
+        const img = ctx.createImageData(s, s);  
+        for (let y = 0; y < s; y++) {  
+            for (let x = 0; x < s; x++) {  
+                const u = x/s, v = y/s;  
+                const n = fbm(u*5, v*5, 80, 5);  
+                const storm = fbm(u*8, v*3, 81, 4);  
+                const i = (y*s+x)*4;  
+                img.data[i] = 40 + n * 30;  
+                img.data[i+1] = 60 + n * 40 + storm * 20;  
+                img.data[i+2] = 180 + n * 40 + storm * 20;  
+                img.data[i+3] = 255;  
+            }  
+        }  
+        ctx.putImageData(img, 0, 0);  
+    });
+
+    textures.pluto = createTexture(256, (ctx, s) => {  
+        const img = ctx.createImageData(s, s);  
+        for (let y = 0; y < s; y++) {  
+            for (let x = 0; x < s; x++) {  
+                const u = x/s, v = y/s;  
+                const n = fbm(u*6, v*6, 90, 5);  
+                const n2 = fbm(u*10, v*10, 91, 4);  
+                const heart = 1 - Math.min(1, Math.sqrt((u-0.45)**2 + (v-0.45)**2) * 4);  
+                const heartShape = heart > 0.3 ? (heart - 0.3) * 0.5 : 0;  
+                const i = (y*s+x)*4;  
+                // Brownish-tan with lighter "heart" region (like Tombaugh Regio)  
+                img.data[i] = 140 + n * 50 + heartShape * 60 + n2 * 15;  
+                img.data[i+1] = 120 + n * 40 + heartShape * 50 + n2 * 10;  
+                img.data[i+2] = 100 + n * 30 + heartShape * 50 + n2 * 10;  
+                // Add some icy patches  
+                if (n2 > 0.6) {  
+                    img.data[i] += 30;  
+                    img.data[i+1] += 25;  
+                    img.data[i+2] += 20;  
+                }  
+                img.data[i+3] = 255;  
+            }  
+        }  
+        ctx.putImageData(img, 0, 0);  
+    });
+
+    // ============ PLANET DATA ============  
+    const planets = [  
+        {  
+            name: 'Sun', radius: 35, distance: 0, speed: 0, angle: 0,  
+            texture: textures.sun, emissive: true, rotationSpeed: 0.002,  
+            glowColor: '#ff6600', glowSize: 50,  
+            description: 'The star at the center of our solar system, a massive ball of hot plasma.',  
+            realDiameter: '1,391,000 km', realDistance: 'N/A (Center)',  
+            orbitPeriod: 'N/A', dayLength: '25.4 Earth days',  
+            temperature: '5,505°C surface', moons: 'N/A'  
+        },  
+        {  
+            name: 'Mercury', radius: 4, distance: 60, speed: 0.04, angle: Math.random()*6.28,  
+            texture: textures.mercury, rotationSpeed: 0.005,  
+            description: 'The smallest planet and closest to the Sun, with extreme temperature variations.',  
+            realDiameter: '4,879 km', realDistance: '57.9M km',  
+            orbitPeriod: '88 days', dayLength: '59 Earth days',  
+            temperature: '-180 to 430°C', moons: '0'  
+        },  
+        {  
+            name: 'Venus', radius: 7, distance: 90, speed: 0.03, angle: Math.random()*6.28,  
+            texture: textures.venus, rotationSpeed: -0.003,  
+            atmosphere: 'rgba(255,200,100,0.15)',  
+            description: 'Earth\'s "sister planet" with a thick toxic atmosphere and crushing pressure.',  
+            realDiameter: '12,104 km', realDistance: '108.2M km',  
+            orbitPeriod: '225 days', dayLength: '243 Earth days',  
+            temperature: '462°C average', moons: '0'  
+        },  
+        {  
+            name: 'Earth', radius: 7.5, distance: 125, speed: 0.025, angle: Math.random()*6.28,  
+            texture: textures.earth, rotationSpeed: 0.01,  
+            atmosphere: 'rgba(100,150,255,0.1)',  
+            description: 'Our home planet, the only known world to harbor life.',  
+            realDiameter: '12,742 km', realDistance: '149.6M km',  
+            orbitPeriod: '365.25 days', dayLength: '24 hours',  
+            temperature: '15°C average', moons: '1 (Moon)',  
+            hasMoon: true, moonRadius: 2, moonDist: 15, moonSpeed: 0.05  
+        },  
+        {  
+            name: 'Mars', radius: 5.5, distance: 165, speed: 0.02, angle: Math.random()*6.28,  
+            texture: textures.mars, rotationSpeed: 0.009,  
+            atmosphere: 'rgba(255,100,50,0.05)',  
+            description: 'The Red Planet, with the largest volcano and canyon in the solar system.',  
+            realDiameter: '6,779 km', realDistance: '227.9M km',  
+            orbitPeriod: '687 days', dayLength: '24.6 hours',  
+            temperature: '-65°C average', moons: '2 (Phobos, Deimos)'  
+        },  
+        {  
+            name: 'Jupiter', radius: 22, distance: 230, speed: 0.012, angle: Math.random()*6.28,  
+            texture: textures.jupiter, rotationSpeed: 0.02,  
+            description: 'The largest planet, a gas giant with the iconic Great Red Spot storm.',  
+            realDiameter: '139,820 km', realDistance: '778.5M km',  
+            orbitPeriod: '11.86 years', dayLength: '9.9 hours',  
+            temperature: '-110°C cloud top', moons: '95 known'  
+        },  
+        {  
+            name: 'Saturn', radius: 18, distance: 310, speed: 0.008, angle: Math.random()*6.28,  
+            texture: textures.saturn, rotationSpeed: 0.018,  
+            hasRings: true, ringInner: 22, ringOuter: 38,  
+            description: 'Famous for its spectacular ring system, a gas giant of immense beauty.',  
+            realDiameter: '116,460 km', realDistance: '1.434B km',  
+            orbitPeriod: '29.46 years', dayLength: '10.7 hours',  
+            temperature: '-140°C cloud top', moons: '146 known'  
+        },  
+        {  
+            name: 'Uranus', radius: 12, distance: 400, speed: 0.005, angle: Math.random()*6.28,  
+            texture: textures.uranus, rotationSpeed: 0.012,  
+            hasRings: true, ringInner: 15, ringOuter: 20, thinRings: true,  
+            description: 'An ice giant tilted on its side, with a unique rotation axis.',  
+            realDiameter: '50,724 km', realDistance: '2.871B km',  
+            orbitPeriod: '84 years', dayLength: '17.2 hours',  
+            temperature: '-195°C', moons: '27 known'  
+        },  
+        {  
+            name: 'Neptune', radius: 11, distance: 480, speed: 0.003, angle: Math.random()*6.28,  
+            texture: textures.neptune, rotationSpeed: 0.011,  
+            description: 'The windiest planet, a deep blue ice giant at the edge of the main solar system.',  
+            realDiameter: '49,244 km', realDistance: '4.495B km',  
+            orbitPeriod: '164.8 years', dayLength: '16.1 hours',  
+            temperature: '-200°C', moons: '16 known'  
+        },  
+        {  
+            name: 'Pluto', radius: 3, distance: 560, speed: 0.002, angle: Math.random()*6.28,  
+            texture: textures.pluto, rotationSpeed: 0.004,  
+            description: 'A dwarf planet in the Kuiper Belt with a heart-shaped nitrogen ice plain.',  
+            realDiameter: '2,377 km', realDistance: '5.906B km',  
+            orbitPeriod: '248 years', dayLength: '6.4 Earth days',  
+            temperature: '-230°C', moons: '5 (Charon largest)',  
+            orbitalInclination: 0.3 // Pluto has inclined orbit  
+        }  
+    ];
+
+    // ============ RENDER SPHERE ============  
+    function renderSphere(x, y, z, radius, texture, rotation, planet) {  
+        const viewMat = mat4Multiply(mat4RotateX(camera.rotX), mat4RotateY(camera.rotY));  
+        const pos = transformPoint(viewMat, [x - camera.focusX, y - camera.focusY, z - camera.focusZ]);  
+        const sp = project(pos);  
+        if (!sp) return;  
+          
+        const screenRadius = radius * 600 / sp[2];  
+        if (screenRadius < 0.5) return;  
+          
+        // Store screen position for click detection  
+        if (planet) {  
+            planet.screenX = sp[0];  
+            planet.screenY = sp[1];  
+            planet.screenRadius = screenRadius;  
+            planet.depth = sp[2];  
+        }  
+          
+        // Glow effect for Sun  
+        if (planet && planet.emissive) {  
+            const glowR = screenRadius + planet.glowSize * (600 / sp[2]);  
+            const glow = ctx.createRadialGradient(sp[0], sp[1], screenRadius * 0.5, sp[0], sp[1], glowR);  
+            glow.addColorStop(0, 'rgba(255,150,50,0.4)');  
+            glow.addColorStop(0.3, 'rgba(255,100,20,0.2)');  
+            glow.addColorStop(0.6, 'rgba(255,50,0,0.05)');  
+            glow.addColorStop(1, 'rgba(255,50,0,0)');  
+            ctx.beginPath();  
+            ctx.arc(sp[0], sp[1], glowR, 0, Math.PI * 2);  
+            ctx.fillStyle = glow;  
+            ctx.fill();  
+              
+            // Corona rays  
+            ctx.save();  
+            ctx.translate(sp[0], sp[1]);  
+            for (let i = 0; i < 12; i++) {  
+                const angle = (i / 12) * Math.PI * 2 + performance.now() * 0.0003;  
+                const len = glowR * (0.8 + Math.sin(performance.now() * 0.002 + i) * 0.3);  
+                ctx.beginPath();  
+                ctx.moveTo(Math.cos(angle) * screenRadius, Math.sin(angle) * screenRadius);  
+                ctx.lineTo(Math.cos(angle) * len, Math.sin(angle) * len);  
+                ctx.strokeStyle = `rgba(255,200,50,${0.05 + Math.sin(performance.now()*0.003+i)*0.03})`;  
+                ctx.lineWidth = 2;  
+                ctx.stroke();  
+            }  
+            ctx.restore();  
+        }  
+          
+        if (screenRadius > 2) {  
+            // Draw textured sphere using circular clip  
+            ctx.save();  
+            ctx.beginPath();  
+            ctx.arc(sp[0], sp[1], screenRadius, 0, Math.PI * 2);  
+            ctx.clip();  
+              
+            // Draw texture with rotation  
+            const texW = screenRadius * 4;  
+            const texH = screenRadius * 2;  
+            const offsetX = (rotation % (Math.PI * 2)) / (Math.PI * 2) * texW;  
+              
+            // Draw texture twice for seamless wrapping  
+            ctx.drawImage(texture, sp[0] - screenRadius - offsetX, sp[1] - screenRadius, texW, screenRadius * 2);  
+            ctx.drawImage(texture, sp[0] - screenRadius - offsetX + texW, sp[1] - screenRadius, texW, screenRadius * 2);  
+              
+            // 3D shading  
+            if (!planet?.emissive) {  
+                const lightDir = transformPoint(viewMat, [-camera.focusX, -camera.focusY, -camera.focusZ]);  
+                const shade = ctx.createRadialGradient(  
+                    sp[0] - screenRadius * 0.3, sp[1] - screenRadius * 0.3, 0,  
+                    sp[0], sp[1], screenRadius  
+                );  
+                shade.addColorStop(0, 'rgba(255,255,255,0.15)');  
+                shade.addColorStop(0.5, 'rgba(0,0,0,0)');  
+                shade.addColorStop(0.8, 'rgba(0,0,0,0.4)');  
+                shade.addColorStop(1, 'rgba(0,0,0,0.7)');  
+                ctx.fillStyle = shade;  
+                ctx.fillRect(sp[0] - screenRadius, sp[1] - screenRadius, screenRadius * 2, screenRadius * 2);  
+            }  
+              
+            ctx.restore();  
+              
+            // Atmosphere glow  
+            if (planet?.atmosphere) {  
+                ctx.beginPath();  
+                ctx.arc(sp[0], sp[1], screenRadius + 3, 0, Math.PI * 2);  
+                ctx.strokeStyle = planet.atmosphere;  
+                ctx.lineWidth = 3;  
+                ctx.stroke();  
+            }  
+        } else {  
+            // Too small, draw as dot  
+            ctx.beginPath();  
+            ctx.arc(sp[0], sp[1], Math.max(2, screenRadius), 0, Math.PI * 2);  
+            ctx.fillStyle = planet?.emissive ? '#ff8800' : '#aaaacc';  
+            ctx.fill();  
+        }  
+          
+        // Planet name label  
+        if (screenRadius > 3 && sp[2] > 0) {  
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';  
+            ctx.font = `${Math.min(14, Math.max(10, screenRadius * 0.5))}px 'Segoe UI'`;  
+            ctx.textAlign = 'center';  
+            ctx.fillText(planet?.name || '', sp[0], sp[1] - screenRadius - 8);  
+        }  
+    }
+
+    // ============ RENDER RINGS ============  
+    function renderRings(x, y, z, planet) {  
+        const viewMat = mat4Multiply(mat4RotateX(camera.rotX), mat4RotateY(camera.rotY));  
+        const segments = 80;  
+          
+        for (let r = planet.ringInner; r <= planet.ringOuter; r += (planet.thinRings ? 2 : 0.8)) {  
+            ctx.beginPath();  
+            let first = true;  
+            for (let i = 0; i <= segments; i++) {  
+                const a = (i / segments) * Math.PI * 2;  
+                const rx = x + Math.cos(a) * r;  
+                const ry = y;  
+                const rz = z + Math.sin(a) * r;  
+                const pos = transformPoint(viewMat, [rx - camera.focusX, ry - camera.focusY, rz - camera.focusZ]);  
+                const sp = project(pos);  
+                if (!sp) continue;  
+                if (first) { ctx.moveTo(sp[0], sp[1]); first = false; }  
+                else ctx.lineTo(sp[0], sp[1]);  
+            }  
+            const ringAlpha = planet.thinRings ? 0.15 : (0.4 - (r - planet.ringInner) / (planet.ringOuter - planet.ringInner) * 0.3);  
+            if (planet.name === 'Saturn') {  
+                const hue = 40 + (r - planet.ringInner) * 2;  
+                ctx.strokeStyle = `hsla(${hue}, 30%, 70%, ${ringAlpha})`;  
+            } else {  
+                ctx.strokeStyle = `rgba(180,200,220,${ringAlpha})`;  
+            }  
+            ctx.lineWidth = planet.thinRings ? 0.5 : 1.5;  
+            ctx.stroke();  
+        }  
+    }
+
+    // ============ RENDER ORBIT PATH ============  
+    function renderOrbit(distance, inclination = 0) {  
+        const viewMat = mat4Multiply(mat4RotateX(camera.rotX), mat4RotateY(camera.rotY));  
+        const segments = 100;  
+        ctx.beginPath();  
+        let first = true;  
+        for (let i = 0; i <= segments; i++) {  
+            const a = (i / segments) * Math.PI * 2;  
+            const ox = Math.cos(a) * distance;  
+            const oy = Math.sin(a) * distance * Math.sin(inclination || 0);  
+            const oz = Math.sin(a) * distance * Math.cos(inclination || 0);  
+            const pos = transformPoint(viewMat, [ox - camera.focusX, oy - camera.focusY, oz - camera.focusZ]);  
+            const sp = project(pos);  
+            if (!sp) continue;  
+            if (first) { ctx.moveTo(sp[0], sp[1]); first = false; }  
+            else ctx.lineTo(sp[0], sp[1]);  
+        }  
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';  
+        ctx.lineWidth = 0.5;  
+        ctx.stroke();  
+    }
+
+    // ============ ASTEROID BELT ============  
+    const asteroids = [];  
+    for (let i = 0; i < 300; i++) {  
+        const a = Math.random() * Math.PI * 2;  
+        const r = 195 + (Math.random() - 0.5) * 20;  
+        asteroids.push({  
+            angle: a, dist: r,  
+            speed: 0.015 + (Math.random() - 0.5) * 0.003,  
+            y: (Math.random() - 0.5) * 8,  
+            size: 0.5 + Math.random() * 1  
+        });  
+    }
+
+    // ============ MAIN LOOP ============  
+    let speedMultiplier = 1;  
+    let time = 0;
+
+    document.getElementById('speed-control').addEventListener('input', e => {  
+        speedMultiplier = parseFloat(e.target.value);  
+        document.getElementById('speed-val').textContent = speedMultiplier.toFixed(1) + 'x';  
+    });
+
+    function animate() {  
+        requestAnimationFrame(animate);  
+          
+        time += 0.016 * speedMultiplier;  
+          
+        // Smooth camera  
+        camera.rotX += (camera.targetRotX - camera.rotX) * 0.08;  
+        camera.rotY += (camera.targetRotY - camera.rotY) * 0.08;  
+        camera.dist += (camera.targetDist - camera.dist) * 0.06;  
+        camera.focusX += (camera.targetFocusX - camera.focusX) * 0.06;  
+        camera.focusY += (camera.targetFocusY - camera.focusY) * 0.06;  
+        camera.focusZ += (camera.targetFocusZ - camera.focusZ) * 0.06;  
+          
+        // Update planet positions  
+        planets.forEach(p => {  
+            if (p.distance > 0) {  
+                p.angle += p.speed * speedMultiplier * 0.016;  
+                const inclination = p.orbitalInclination || 0;  
+                p.worldX = Math.cos(p.angle) * p.distance;  
+                p.worldY = Math.sin(p.angle) * p.distance * Math.sin(inclination);  
+                p.worldZ = Math.sin(p.angle) * p.distance * Math.cos(inclination);  
+            } else {  
+                p.worldX = p.worldY = p.worldZ = 0;  
+            }  
+            p.rotation = (p.rotation || 0) + (p.rotationSpeed || 0.01) * speedMultiplier;  
+        });  
+          
+        // Focus on planet  
+        if (focusedPlanet) {  
+            camera.targetFocusX = focusedPlanet.worldX;  
+            camera.targetFocusY = focusedPlanet.worldY;  
+            camera.targetFocusZ = focusedPlanet.worldZ;  
+        }  
+          
+        // Clear  
+        ctx.fillStyle = '#000005';  
+        ctx.fillRect(0, 0, W, H);  
+          
+        // Subtle nebula background  
+        const t = performance.now() * 0.0001;  
+        const nebGrad = ctx.createRadialGradient(W*0.3, H*0.4, 0, W*0.3, H*0.4, W*0.6);  
+        nebGrad.addColorStop(0, `rgba(20,10,40,${0.15 + Math.sin(t) * 0.05})`);  
+        nebGrad.addColorStop(0.5, `rgba(10,5,30,${0.1 + Math.sin(t+1) * 0.03})`);  
+        nebGrad.addColorStop(1, 'rgba(0,0,0,0)');  
+        ctx.fillStyle = nebGrad;  
+        ctx.fillRect(0, 0, W, H);  
+          
+        const nebGrad2 = ctx.createRadialGradient(W*0.7, H*0.6, 0, W*0.7, H*0.6, W*0.5);  
+        nebGrad2.addColorStop(0, `rgba(30,10,15,${0.1 + Math.sin(t*1.3+2) * 0.04})`);  
+        nebGrad2.addColorStop(1, 'rgba(0,0,0,0)');  
+        ctx.fillStyle = nebGrad2;  
+        ctx.fillRect(0, 0, W, H);  
+          
+        // Stars  
+        const viewMat = mat4Multiply(mat4RotateX(camera.rotX), mat4RotateY(camera.rotY));  
+        stars.forEach(s => {  
+            const pos = transformPoint(viewMat, [s.x, s.y, s.z]);  
+            const sp = project(pos);  
+            if (!sp || sp[2] < 0) return;  
+            const twinkle = 0.6 + 0.4 * Math.sin(performance.now() * 0.001 * s.twinkleSpeed + s.x);  
+            const alpha = s.brightness * twinkle;  
+            ctx.beginPath();  
+            ctx.arc(sp[0], sp[1], s.size * (600 / sp[2]) * 2, 0, Math.PI * 2);  
+            ctx.fillStyle = s.color;  
+            ctx.globalAlpha = alpha;  
+            ctx.fill();  
+            ctx.globalAlpha = 1;  
+        });  
+          
+        // Orbit paths  
+        planets.forEach(p => {  
+            if (p.distance > 0) renderOrbit(p.distance, p.orbitalInclination);  
+        });  
+          
+        // Asteroids  
+        asteroids.forEach(a => {  
+            a.angle += a.speed * speedMultiplier * 0.016;  
+            const ax = Math.cos(a.angle) * a.dist;  
+            const az = Math.sin(a.angle) * a.dist;  
+            const pos = transformPoint(viewMat, [ax - camera.focusX, a.y - camera.focusY, az - camera.focusZ]);  
+            const sp = project(pos);  
+            if (!sp) return;  
+            const size = a.size * 600 / sp[2];  
+            if (size < 0.3) return;  
+            ctx.beginPath();  
+            ctx.arc(sp[0], sp[1], Math.max(0.5, size), 0, Math.PI * 2);  
+            ctx.fillStyle = `rgba(150,140,130,${Math.min(1, size)})`;  
+            ctx.fill();  
+        });  
+          
+        // Sort planets by depth for correct rendering  
+        const sorted = [...planets].map((p, i) => ({...p, idx: i}));  
+        sorted.sort((a, b) => {  
+            const posA = transformPoint(viewMat, [a.worldX - camera.focusX, a.worldY - camera.focusY, a.worldZ - camera.focusZ]);  
+            const posB = transformPoint(viewMat, [b.worldX - camera.focusX, b.worldY - camera.focusY, b.worldZ - camera.focusZ]);  
+            return (posB[2] + camera.dist) - (posA[2] + camera.dist);  
+        });  
+          
+        // Render planets  
+        sorted.forEach(p => {  
+            const planet = planets[p.idx];  
+              
+            // Rings behind planet  
+            if (planet.hasRings) {  
+                renderRings(planet.worldX, planet.worldY, planet.worldZ, planet);  
+            }  
+              
+            renderSphere(planet.worldX, planet.worldY, planet.worldZ, planet.radius, planet.texture, planet.rotation, planet);  
+              
+            // Earth's moon  
+            if (planet.hasMoon) {  
+                const moonAngle = time * planet.moonSpeed;  
+                const mx = planet.worldX + Math.cos(moonAngle) * planet.moonDist;  
+                const mz = planet.worldZ + Math.sin(moonAngle) * planet.moonDist;  
+                const my = planet.worldY + Math.sin(moonAngle * 0.5) * 2;  
+                  
+                const moonPos = transformPoint(viewMat, [mx - camera.focusX, my - camera.focusY, mz - camera.focusZ]);  
+                const moonSp = project(moonPos);  
+                if (moonSp) {  
+                    const moonSR = planet.moonRadius * 600 / moonSp[2];  
+                    if (moonSR > 0.5) {  
+                        ctx.beginPath();  
+                        ctx.arc(moonSp[0], moonSp[1], moonSR, 0, Math.PI * 2);  
+                        const moonGrad = ctx.createRadialGradient(  
+                            moonSp[0] - moonSR * 0.3, moonSp[1] - moonSR * 0.3, 0,  
+                            moonSp[0], moonSp[1], moonSR  
+                        );  
+                        moonGrad.addColorStop(0, '#ddd');  
+                        moonGrad.addColorStop(0.7, '#999');  
+                        moonGrad.addColorStop(1, '#555');  
+                        ctx.fillStyle = moonGrad;  
+                        ctx.fill();  
+                    }  
+                }  
+            }  
+        });  
+          
+        // Draw visualizer  
+        if (analyser && (ambientEnabled || planetMusicEnabled)) {  
+            analyser.getByteFrequencyData(analyserData);  
+            vizCtx.clearRect(0, 0, W, 40);  
+            const barWidth = W / analyserData.length;  
+            for (let i = 0; i < analyserData.length; i++) {  
+                const h = (analyserData[i] / 255) * 35;  
+                const hue = 220 + (i / analyserData.length) * 60;  
+                vizCtx.fillStyle = `hsla(${hue}, 60%, 60%, ${0.3 + h/35 * 0.4})`;  
+                vizCtx.fillRect(i * barWidth, 40 - h, barWidth - 1, h);  
+            }  
+        }  
+    }  
+      
     animate();  
-}
-
-function updateCam(){camTarget.lerp(tCamTarget,.04);camTheta+=(tTheta-camTheta)*.06;camPhi+=(tPhi-camPhi)*.06;camDist+=(tDist-camDist)*.06;  
-    camPhi=Math.max(.1,Math.min(Math.PI-.1,camPhi));camDist=Math.max(3,Math.min(300,camDist));  
-    camera.position.x=camTarget.x+camDist*Math.sin(camPhi)*Math.cos(camTheta);camera.position.y=camTarget.y+camDist*Math.cos(camPhi);  
-    camera.position.z=camTarget.z+camDist*Math.sin(camPhi)*Math.sin(camTheta);camera.lookAt(camTarget);  
-    camFill.position.copy(camera.position);camFill.target.position.copy(camTarget);}
-
-renderer.domElement.addEventListener('mousedown',e=>{isDrag=true;prevMX=e.clientX;prevMY=e.clientY;autoRot=false;});  
-renderer.domElement.addEventListener('mousemove',e=>{mouse.x=(e.clientX/window.innerWidth)*2-1;mouse.y=-(e.clientY/window.innerHeight)*2+1;  
-    if(isDrag){tTheta-=(e.clientX-prevMX)*.005;tPhi-=(e.clientY-prevMY)*.005;prevMX=e.clientX;prevMY=e.clientY;}});  
-renderer.domElement.addEventListener('mouseup',()=>{isDrag=false;});  
-renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();tDist+=e.deltaY*.04;},{passive:false});  
-renderer.domElement.addEventListener('click',()=>{ray.setFromCamera(mouse,camera);const h=ray.intersectObjects(meshes);if(h.length>0)selPlanet(h[0].object.userData.data,h[0].object.userData.idx);});  
-let lTD=0;  
-renderer.domElement.addEventListener('touchstart',e=>{if(e.touches.length===1){isDrag=true;prevMX=e.touches[0].clientX;prevMY=e.touches[0].clientY;autoRot=false;}if(e.touches.length===2)lTD=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);});  
-renderer.domElement.addEventListener('touchmove',e=>{e.preventDefault();if(e.touches.length===1&&isDrag){tTheta-=(e.touches[0].clientX-prevMX)*.005;tPhi-=(e.touches[0].clientY-prevMY)*.005;prevMX=e.touches[0].clientX;prevMY=e.touches[0].clientY;}if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);tDist*=lTD/d;lTD=d;}},{passive:false});  
-renderer.domElement.addEventListener('touchend',()=>{isDrag=false;});  
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeInfo();if(e.key===' '){e.preventDefault();doNova();}  
-    if(e.key==='o'||e.key==='O')togOrb();if(e.key==='l'||e.key==='L')togLab();if(e.key==='m'||e.key==='M')togMus();if(e.key==='r'||e.key==='R')resetCam();  
-    if(e.key==='='||e.key==='+')zmIn();if(e.key==='-')zmOut();  
-    if(e.key==='ArrowLeft')tTheta+=.15;if(e.key==='ArrowRight')tTheta-=.15;if(e.key==='ArrowUp')tPhi=Math.max(.1,tPhi-.1);if(e.key==='ArrowDown')tPhi=Math.min(Math.PI-.1,tPhi+.1);  
-    const n=parseInt(e.key);if(!isNaN(n)&&n>=0&&n<=9)selPlanet(DATA[n],n);});
-
-const clock=new THREE.Clock();let tgF=0;  
-function animate(){requestAnimationFrame(animate);const t=clock.getElapsedTime();  
-    if(autoRot)tTheta+=.0008;updateCam();  
-    fillLight.intensity+=(tgF-fillLight.intensity)*.08;camFill.intensity+=(tgF*.4-camFill.intensity)*.08;  
-    meshes.forEach((m,i)=>{const d=DATA[i];m.userData.angle+=d.spd*.004*spdMul;  
-        if(d.orbit>0){m.position.x=Math.cos(m.userData.angle)*d.orbit;m.position.z=Math.sin(m.userData.angle)*d.orbit;}  
-        m.rotation.y+=(d.name==='Sun'?.001:.004)*spdMul;  
-        if(d.name==='Uranus')m.rotation.z=1.71;else if(d.name==='Earth')m.rotation.z=.41;  
-        if(d.name==='Sun'){sunPt.position.copy(m.position);sunPt2.position.copy(m.position);  
-            if(m.userData.glow1)m.userData.glow1.material.uniforms.time.value=t;if(m.userData.glow2)m.userData.glow2.material.uniforms.time.value=t;}  
-        if(m.userData.clouds)m.userData.clouds.rotation.y+=.0005*spdMul;  
-        if(m.userData.moon){const a=t*.6;m.userData.moon.position.set(m.position.x+Math.cos(a)*2,Math.sin(a*.4)*.3,m.position.z+Math.sin(a)*2);}  
-        if(m.userData.jMoons)m.userData.jMoons.forEach((mm,j)=>{const a=t*(.3+j*.15)+j*1.57,md=4.5+j*1.2;mm.position.set(m.position.x+Math.cos(a)*md,Math.sin(a*.3+j)*.3,m.position.z+Math.sin(a)*md);});  
-        if(d.name!=='Sun'){if(selIdx===i){m.material.emissiveIntensity+=(.45-m.material.emissiveIntensity)*.08;  
-            const sp=meshes[0].position,ts=sp.clone().sub(m.position).normalize();  
-            fillLight.position.copy(m.position).sub(ts.multiplyScalar(d.r*4));fillLight.visible=true;}  
-            else m.material.emissiveIntensity+=(m.userData.origEI-m.material.emissiveIntensity)*.05;}  
-        if(selIdx===i)tCamTarget.copy(m.position);  
-        if(lbls[i]){if(showLab){const p=m.position.clone();p.y+=d.r+.6;p.project(camera);lbls[i].style.left=(p.x*.5+.5)*window.innerWidth+'px';lbls[i].style.top=(-p.y*.5+.5)*window.innerHeight+'px';lbls[i].style.opacity=p.z<1?'0.7':'0';}else lbls[i].style.opacity='0';}  
-    });  
-    orbLines.forEach(l=>{l.visible=showOrb;});  
-    if(selIdx>=0)tgF=2.5;else{tgF=0;fillLight.visible=false;}  
-    if(!isDrag){ray.setFromCamera(mouse,camera);const h=ray.intersectObjects(meshes);  
-        meshes.forEach(m=>{if(m.userData.data.name!=='Sun'&&selIdx!==m.userData.idx)m.material.emissiveIntensity=m.userData.origEI;});  
-        if(h.length>0){const hm=h[0].object;if(hm.userData.data.name!=='Sun'&&selIdx!==hm.userData.idx)hm.material.emissiveIntensity=.2;renderer.domElement.style.cursor='pointer';}  
-        else renderer.domElement.style.cursor='grab';}  
-    if(novaOn){const p=Math.min((t-novaT)/3,1);window._nM.uniforms.time.value=t;window._nM.uniforms.progress.value=p;window._nMesh.visible=true;if(p>=1){novaOn=false;window._nMesh.visible=false;}}  
-    document.getElementById('zmV').textContent=(55/camDist).toFixed(1)+'x';  
-    renderer.render(scene,camera);}
-
-function selPlanet(d,idx){selected=d;selIdx=idx;playClick();  
-    const m=meshes[idx];tCamTarget.copy(m.position);tDist=d.r*6+2;tPhi=1.1;  
-    tTheta=Math.atan2(m.position.z,m.position.x)+.6;autoRot=false;  
-    document.getElementById('focusName').textContent=d.name.toUpperCase();document.getElementById('focusName').style.opacity='1';  
-    const ph=PHOTOS[d.name];  
-    document.getElementById('heroImg').src=ph.img;document.getElementById('picImg').src=ph.img;  
-    document.getElementById('pcred').textContent=ph.credit;  
-    document.getElementById('pnm').textContent=d.name;document.getElementById('pty').textContent=d.type;  
-    document.getElementById('icard').style.setProperty('--ac',d.css);document.getElementById('icard').style.setProperty('--ac2',d.css+'44');  
-    const sg=document.getElementById('pst');sg.innerHTML='';  
-    for(const[k,v]of Object.entries(d.stats))sg.innerHTML+=`<div class="si"><div class="sl">${k}</div><div class="sv">${v}</div></div>`;  
-    document.getElementById('pft').textContent=d.fact;  
-    const mb=document.getElementById('pmb'),mt=document.getElementById('pmt');  
-    if(d.moons.length){mb.style.display='block';mt.innerHTML=d.moons.map(m=>`<span class="mg">${m}</span>`).join('');}else mb.style.display='none';  
-    document.getElementById('ip').classList.add('open');  
-    document.querySelectorAll('.pd').forEach((b,i)=>b.classList.toggle('sel',i===idx));}
-
-function closeInfo(){document.getElementById('ip').classList.remove('open');selected=null;selIdx=-1;  
-    document.querySelectorAll('.pd').forEach(b=>b.classList.remove('sel'));document.getElementById('focusName').style.opacity='0';tgF=0;}  
-function togOrb(){showOrb=!showOrb;document.getElementById('bOrb').classList.toggle('on',showOrb);}  
-function togLab(){showLab=!showLab;document.getElementById('bLab').classList.toggle('on',showLab);}  
-function resetCam(){tCamTarget.set(0,0,0);tTheta=.4;tPhi=1.1;tDist=55;autoRot=true;closeInfo();}  
-function zmIn(){tDist=Math.max(3,tDist/1.3);}function zmOut(){tDist=Math.min(300,tDist*1.3);}  
-function spdUp(){spdMul=Math.min(10,spdMul*1.5);document.getElementById('spdV').textContent=spdMul.toFixed(1)+'x';}  
-function spdDn(){spdMul=Math.max(.1,spdMul/1.5);document.getElementById('spdV').textContent=spdMul.toFixed(1)+'x';}  
-function doNova(){novaOn=true;novaT=clock.getElapsedTime();if(window._nMesh)window._nMesh.visible=true;playNova();document.body.style.filter='brightness(3)';setTimeout(()=>{document.body.style.filter='brightness(1)';},100);}
-
-function initA(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();}  
-function togMus(){initA();if(musOn){oscArr.forEach(o=>{try{o.stop();}catch(e){}});oscArr=[];document.getElementById('bMus').textContent='🔇 MUSIC';document.getElementById('bMus').classList.remove('on');}  
-    else{const mg=actx.createGain();mg.gain.value=.04;mg.connect(actx.destination);  
-        [55,82.41,110,146.83,220].forEach((f,i)=>{const o=actx.createOscillator(),g=actx.createGain(),fl=actx.createBiquadFilter();  
-            o.type=i<2?'sine':'triangle';o.frequency.value=f;const lfo=actx.createOscillator(),lg=actx.createGain();  
-            lfo.frequency.value=.02+i*.01;lg.gain.value=f*.01;lfo.connect(lg);lg.connect(o.frequency);lfo.start();  
-            fl.type='lowpass';fl.frequency.value=250+i*50;g.gain.value=.18-i*.025;o.connect(fl);fl.connect(g);g.connect(mg);o.start();oscArr.push(o,lfo);});  
-        document.getElementById('bMus').textContent='🔊 MUSIC';document.getElementById('bMus').classList.add('on');}musOn=!musOn;}  
-function playClick(){initA();const o=actx.createOscillator(),g=actx.createGain();o.type='sine';o.frequency.setValueAtTime(800,actx.currentTime);o.frequency.exponentialRampToValueAtTime(1200,actx.currentTime+.08);o.frequency.exponentialRampToValueAtTime(400,actx.currentTime+.3);g.gain.setValueAtTime(.06,actx.currentTime);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+.4);o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+.4);}  
-function playNova(){initA();const o=actx.createOscillator(),g=actx.createGain(),f=actx.createBiquadFilter();o.type='sawtooth';o.frequency.setValueAtTime(80,actx.currentTime);o.frequency.exponentialRampToValueAtTime(12,actx.currentTime+3);g.gain.setValueAtTime(.2,actx.currentTime);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+3.5);f.type='lowpass';f.frequency.value=180;o.connect(f);f.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+3.5);}
-
-function buildBar(){const bar=document.getElementById('pbar');  
-    DATA.forEach((d,i)=>{const el=document.createElement('div');el.className='pd';el.style.setProperty('--c',d.css);  
-        const ph=PHOTOS[d.name];  
-        el.innerHTML=`<div class="pd-orb"><img src="${ph.img}" alt="${d.name}" onerror="this.style.display='none';this.parentElement.style.background='radial-gradient(circle at 35% 35%,${d.g[0]},${d.g[1]})'"></div><div class="pd-name">${d.name.toUpperCase()}</div>`;  
-        el.addEventListener('click',()=>selPlanet(d,i));bar.appendChild(el);});}
-
-window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
-
-buildBar();init();  
-</script>  
+    </script>  
 </body>  
 </html>  
